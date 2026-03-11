@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ContactCard from './ContactCard';
 
-const KanbanColumn = ({ id, title, inquiries, onDropRecord }) => {
+const KanbanColumn = ({ id, title, inquiries, onDropRecord, onDeleteRecord }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e) => {
@@ -38,7 +38,7 @@ const KanbanColumn = ({ id, title, inquiries, onDropRecord }) => {
       
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 hide-scrollbar">
         {inquiries.map(inquiry => (
-          <ContactCard key={inquiry.id} data={inquiry} />
+          <ContactCard key={inquiry.id} data={inquiry} onDelete={onDeleteRecord} />
         ))}
         {inquiries.length === 0 && (
           <div className="text-center text-[#9BACA4] py-8 px-4 bg-white/30 rounded-2xl border border-dashed border-[#EAE3D9] text-sm font-medium">

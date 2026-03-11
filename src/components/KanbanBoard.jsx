@@ -35,6 +35,10 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
     }
   };
 
+  const handleDeleteRecord = (recordId) => {
+    setInquiries(prev => prev.filter(inq => inq.id !== recordId));
+  };
+
   return (
     <div className="flex gap-6 h-full w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-4 hide-scrollbar">
       {columns.map(col => {
@@ -48,6 +52,7 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
               title={col.title} 
               inquiries={columnInquiries} 
               onDropRecord={handleDropRecord}
+              onDeleteRecord={handleDeleteRecord}
             />
           </div>
         );

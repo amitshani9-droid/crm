@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon } from 'lucide-react';
-import { updateAirtableRecord, uploadFileToRecord } from '../airtable';
+import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon, Trash2 } from 'lucide-react';
+import { updateAirtableRecord, uploadFileToRecord, deleteAirtableRecord } from '../airtable';
 import toast from 'react-hot-toast';
 
-const ContactCard = ({ data }) => {
+const ContactCard = ({ data, onDelete }) => {
   const [localData, setLocalData] = useState(data);
   const { 
     id,
@@ -34,8 +34,27 @@ const ContactCard = ({ data }) => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    
+    const confirmed = window.confirm("האם את בטוחה שברצונך למחוק את הלקוח? פעולה זו אינה ניתנת לביטול.");
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    const success = await deleteAirtableRecord(id);
+    setIsDeleting(false);
+
+    if (success) {
+      toast.success('הלקוח נמחק בהצלחה');
+      if (onDelete) onDelete(id);
+    } else {
+      toast.error('שגיאה במחיקת הלקוח');
+    }
+  };
 
   const getInitials = (nameStr) => {
     if (!nameStr) return '?';
@@ -201,8 +220,11 @@ const ContactCard = ({ data }) => {
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <button disabled={isSaving} onClick={handleSaveCard} className="flex-1 bg-[#C5A880] text-white py-2 rounded-lg font-bold shadow-md hover:bg-[#b09673] flex items-center justify-center gap-1 active:scale-95 transition-all"><Check size={18}/> שמור שינויים</button>
-            <button disabled={isSaving} onClick={(e) => { e.stopPropagation(); setIsEditingCard(false); }} className="px-5 bg-white border border-[#EAE3D9] text-[#666666] rounded-lg font-bold hover:bg-[#FDFBF7] transition-all">ביטול</button>
+            <button disabled={isSaving || isDeleting} onClick={handleSaveCard} className="flex-1 bg-[#C5A880] text-white py-2 rounded-lg font-bold shadow-md hover:bg-[#b09673] flex items-center justify-center gap-1 active:scale-95 transition-all"><Check size={18}/> שמור שינויים</button>
+            <button disabled={isSaving || isDeleting} onClick={(e) => { e.stopPropagation(); setIsEditingCard(false); }} className="px-5 bg-white border border-[#EAE3D9] text-[#666666] rounded-lg font-bold hover:bg-[#FDFBF7] transition-all">ביטול</button>
+            <button disabled={isSaving || isDeleting} onClick={handleDelete} className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all active:scale-95" title="מחק לקוח">
+              <Trash2 size={20} />
+            </button>
           </div>
         </div>
       ) : (
@@ -228,16 +250,25 @@ const ContactCard = ({ data }) => {
                   </div>
                 )}
               </div>
+            <div className="flex gap-1 ml-[-0.5rem] mt-[-0.5rem]">
+              <button 
+                disabled={isDeleting}
+                onClick={handleDelete}
+                className="flex-shrink-0 text-[#9BACA4] hover:text-red-500 transition-colors p-2 bg-[#FDFBF7] hover:bg-white rounded-full border border-transparent hover:border-red-100 shadow-sm"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsEditingCard(true); }}
+                className="flex-shrink-0 text-[#9BACA4] hover:text-[#C5A880] transition-colors p-2 bg-[#FDFBF7] hover:bg-white rounded-full border border-transparent hover:border-[#EAE3D9] shadow-sm"
+              >
+                <Edit2 size={16} />
+              </button>
             </div>
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsEditingCard(true); }}
-              className="flex-shrink-0 text-[#9BACA4] hover:text-[#C5A880] transition-colors p-2 bg-[#FDFBF7] hover:bg-white rounded-full border border-transparent hover:border-[#EAE3D9] shadow-sm ml-[-0.5rem] mt-[-0.5rem]"
-            >
-              <Edit2 size={16} />
-            </button>
           </div>
+        </div>
           
-          <div className="flex flex-col gap-3 text-base text-[#666666]">
+        <div className="flex flex-col gap-3 text-base text-[#666666]">
             {EventDate && (
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-[#C5A880]" />

@@ -3,8 +3,8 @@
 import Airtable from 'airtable';
 
 const AIRTABLE_PAT = import.meta.env.VITE_AIRTABLE_PAT;
-const BASE_ID = 'appYYOLggK34YEZsM';
-const TABLE_NAME = 'Table 1';
+const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appYYOLggK34YEZsM';
+const TABLE_NAME = import.meta.env.VITE_AIRTABLE_TABLE_NAME || 'Table 1';
 
 let base;
 if (AIRTABLE_PAT) {
@@ -87,10 +87,12 @@ export async function uploadFileToRecord(recordId, file, existingAttachments = [
     // 1. Upload to permanent hosting (Cloudinary) to get a secure public URL
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'ml_default'); // Unsigned preset
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dahpqxpbb';
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+
+    formData.append('upload_preset', uploadPreset); 
     
-    // Using /auto/upload handles images, pdfs, and raw files seamlessly
-    const uploadRes = await fetch('https://api.cloudinary.com/v1_1/dahpqxpbb/auto/upload', {
+    const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
       method: 'POST',
       body: formData
     });
@@ -224,6 +226,21 @@ export async function createAirtableRecord(fields) {
     return true;
   } catch (error) {
     console.error("Error creating Airtable record:", error);
+    return false;
+  }
+}
+
+export async function deleteAirtableRecord(recordId) {
+  if (!base) {
+    console.warn("Using dummy data, skipping Airtable SDK delete hook.");
+    return true; // Simulate success
+  }
+
+  try {
+    await base(TABLE_NAME).destroy(recordId);
+    return true;
+  } catch (error) {
+    console.error("Error deleting Airtable record:", error);
     return false;
   }
 }
