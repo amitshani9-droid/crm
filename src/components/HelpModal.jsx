@@ -60,7 +60,7 @@ const HelpModal = ({ isOpen, onClose }) => {
                     <div className="space-y-1">
                       <h4 className="font-bold text-[#333333]">סטטוסים ושלבי עבודה</h4>
                       <p className="text-[#666666] text-sm leading-relaxed">
-                        המערכת מחולקת ל-3 שלבים: <span className="text-[#2C8A99] font-semibold">"פניות חדשות"</span> (כחול), <span className="text-[#C5A880] font-semibold">"בטיפול"</span> (צהוב), ו-<span className="text-[#9BACA4] font-semibold">"אירוע סגור"</span> (ירוק). פשוט גררי את הכרטיס ליעד הבא.
+                        המערכת מחולקת ל-3 שלבים: <span className="text-[#2C8A99] font-semibold">"פניות חדשות"</span> (כחול), <span className="text-[#C5A880] font-semibold">"בטיפול"</span> (צהוב), ו-<span className="text-[#9BACA4] font-semibold">"סגור"</span> (ירוק). פשוט גררי את הכרטיס ליעד הבא.
                       </p>
                     </div>
                   </div>

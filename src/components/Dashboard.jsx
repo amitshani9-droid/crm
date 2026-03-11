@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Link as LinkIcon, Users, CalendarDays, Briefcase, Download, TrendingUp, Database, Search, X, Loader2, MessageCircle, BarChart3, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import { Plus, Link as LinkIcon, Users, CalendarDays, Briefcase, Download, TrendingUp, Database, Search, X, Loader2, MessageCircle, BarChart3, HelpCircle, Eye, EyeOff, RotateCw } from 'lucide-react';
 import { fetchAirtableRecords, createAirtableRecord } from '../airtable';
 import KanbanBoard from './KanbanBoard';
 import { Toaster, toast } from 'react-hot-toast';
@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [showHelpSidebar, setShowHelpSidebar] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [runTour, setRunTour] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -74,6 +75,14 @@ const Dashboard = () => {
 
     loadData();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    const data = await fetchAirtableRecords();
+    setInquiries(data);
+    setRefreshing(false);
+    toast.success('הנתונים רועננו בהצלחה! 🔄');
+  };
 
   const handleNewEvent = () => {
     setShowAddModal(true);
@@ -156,7 +165,7 @@ const Dashboard = () => {
   const totalLeads = inquiries.length;
   const newLeadsCount = inquiries.filter(i => i.Status === 'פניות חדשות' || !i.Status).length;
   const inProgressCount = inquiries.filter(i => i.Status === 'בטיפול').length;
-  const closedCount = inquiries.filter(i => i.Status === 'אירוע סגור').length;
+  const closedCount = inquiries.filter(i => i.Status === 'סגור').length;
   
   // Calculate Conversion Rate (Closed / Total)
   const conversionRate = totalLeads > 0 ? Math.round((closedCount / totalLeads) * 100) : 0;
@@ -245,6 +254,15 @@ const Dashboard = () => {
 
         <div className="flex items-center gap-3">
           <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 bg-white text-[#666666] px-4 py-3 rounded-2xl text-base font-semibold transition-all border border-[#EAE3D9] hover:bg-[#FDFBF7] shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            <RotateCw size={18} className={`text-[#C5A880] ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden md:inline">רענן נתונים</span>
+          </button>
+
+          <button
             onClick={() => navigate('/import')}
             className="flex items-center gap-2 bg-white text-[#666666] px-4 py-3 rounded-2xl text-base font-semibold transition-all border border-[#EAE3D9] hover:bg-[#FDFBF7] shadow-sm active:scale-95"
           >
@@ -287,6 +305,13 @@ const Dashboard = () => {
              <p className="text-[#9BACA4] text-sm">זה המצב להיום בלוח שלך</p>
            </div>
            <div className="flex items-center gap-3">
+             <button 
+               onClick={handleRefresh}
+               disabled={refreshing}
+               className="p-2.5 bg-white border border-[#EAE3D9] rounded-xl text-[#C5A880] active:scale-95 transition-all shadow-sm disabled:opacity-50"
+             >
+               <RotateCw size={22} className={refreshing ? 'animate-spin' : ''} />
+             </button>
              <button 
                onClick={() => setShowHelpSidebar(true)}
                className="p-2.5 bg-white border border-[#EAE3D9] rounded-xl text-[#2C8A99] active:scale-95 transition-all shadow-sm"
@@ -380,7 +405,7 @@ const Dashboard = () => {
               <div className="h-3 w-full bg-[#F5F2EB] rounded-full overflow-hidden flex">
                 <div style={{ width: `${newPct}%` }} className="bg-[#C5A880] transition-all duration-1000" title={`פניות חדשות: ${Math.round(newPct)}%`} />
                 <div style={{ width: `${inProgressPct}%` }} className="bg-[#9BACA4] transition-all duration-1000" title={`בטיפול: ${Math.round(inProgressPct)}%`} />
-                <div style={{ width: `${closedPct}%` }} className="bg-[#333333] transition-all duration-1000" title={`אירוע סגור: ${Math.round(closedPct)}%`} />
+                <div style={{ width: `${closedPct}%` }} className="bg-[#333333] transition-all duration-1000" title={`סגור: ${Math.round(closedPct)}%`} />
               </div>
               <div className="flex gap-4 text-xs mt-1">
                  <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#C5A880]" /> <span className="text-[#666666]">חדשים ({newLeadsCount})</span></div>

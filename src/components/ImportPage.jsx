@@ -124,7 +124,7 @@ const ImportPage = () => {
         'Event Type': columnMapping.EventType ? (row[columnMapping.EventType] || '') : '',
         'Event Date': cleanDate,
         Notes: columnMapping.Notes ? (row[columnMapping.Notes] || '') : '',
-        Status: 'לקוח מפעם' // Default status for legacy imports
+        Status: 'סגור' // Default status for legacy imports (Closed)
       };
     });
 

@@ -18,15 +18,16 @@ export async function fetchAirtableRecords() {
       { id: '1', Status: 'פניות חדשות', Name: 'דני כהן', Phone: '0541234567', Email: 'dani@example.com', 'Event Type': 'חתונת שישי', 'Event Date': '2026-05-15', Notes: 'פניה מהאתר, מחפש מקום פתוח' },
       { id: '2', Status: 'פניות חדשות', Name: 'מיכל לוי', Phone: '0529876543', Email: 'michal@example.com', 'Event Type': 'בר מצווה' },
       { id: '3', Status: 'בטיפול', Name: 'רועי ונועה', Phone: '0501112233', Email: 'rn@example.com', 'Event Type': 'חתונה', Notes: 'פגישת טעימות בשבוע הבא' },
-      { id: '4', Status: 'אירוע סגור', Name: 'משפחת ישראלי', Phone: '0534445566', Email: 'israeli@example.com', 'Event Type': 'בת מצווה', Notes: 'לוודא הגעת ספקים ב-16:00' }
+      { id: '4', Status: 'סגור', Name: 'משפחת ישראלי', Phone: '0534445566', Email: 'israeli@example.com', 'Event Type': 'בת מצווה', Notes: 'לוודא הגעת ספקים ב-16:00' }
     ];
   }
 
   try {
     const records = await base(TABLE_NAME).select().all();
     return records.map(record => {
-      // Self-Healing ID: Ensure every record has a unique ID, fallback to Airtable record.id
-      const uniqueId = record.fields.id || record.id || Math.random().toString(36).substr(2, 9);
+      // CRITICAL FIX: Prioritize Airtable's internal record.id for all updates to prevent 422 errors.
+      // We store it as 'id' so components can pass it back to updateAirtableRecord.
+      const recordId = record.id;
       
       // Hebrew Date Parsing
       let parsedDate = record.fields['Event Date'];
@@ -43,7 +44,7 @@ export async function fetchAirtableRecords() {
       }
 
       return {
-        id: uniqueId,
+        id: recordId,
         ...record.fields,
         Company: record.fields.Company || '',
         ['Event Date']: parsedDate, // Override with parsed date

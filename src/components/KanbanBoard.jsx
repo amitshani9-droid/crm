@@ -8,7 +8,7 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
   const columns = [
     { id: 'פניות חדשות', title: 'חדשים' },
     { id: 'בטיפול', title: 'בטיפול' },
-    { id: 'אירוע סגור', title: 'סגורים' }
+    { id: 'סגור', title: 'סגורים' }
   ];
 
   const getInquiriesForColumn = (statusId) => {
