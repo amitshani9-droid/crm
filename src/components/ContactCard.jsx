@@ -29,6 +29,7 @@ const ContactCard = ({ data, onDelete }) => {
     Name: Name || '',
     Company: Company || '',
     Phone: Phone || '',
+    Email: Email || '',
     'Event Type': EventType || '',
     'Event Date': localData._rawDate || ''
   });
@@ -128,6 +129,7 @@ const ContactCard = ({ data, onDelete }) => {
       Name: editForm.Name,
       Company: editForm.Company,
       Phone: editForm.Phone,
+      Email: editForm.Email,
       'Event Type': editForm['Event Type'],
       'Event Date': editForm['Event Date']
     };
@@ -201,6 +203,10 @@ const ContactCard = ({ data, onDelete }) => {
           <div>
              <label className="block text-xs font-semibold text-[#666666] mb-1">טלפון</label>
              <input type="tel" dir="ltr" value={editForm.Phone} onChange={e => setEditForm({...editForm, Phone: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none text-right transition-colors" placeholder="05X-XXXXXXX" onClick={e => e.stopPropagation()} />
+          </div>
+          <div>
+             <label className="block text-xs font-semibold text-[#666666] mb-1">דוא"ל</label>
+             <input type="email" dir="ltr" value={editForm.Email} onChange={e => setEditForm({...editForm, Email: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none text-right transition-colors" placeholder="name@example.com" onClick={e => e.stopPropagation()} />
           </div>
           <div className="flex gap-2">
             <div className="flex-1">

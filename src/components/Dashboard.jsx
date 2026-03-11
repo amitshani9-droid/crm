@@ -27,6 +27,7 @@ const Dashboard = () => {
     Name: '',
     Company: '',
     Phone: '',
+    Email: '',
     ['Event Type']: '',
     ['Event Date']: '',
     Notes: ''
@@ -552,6 +553,17 @@ const Dashboard = () => {
                   className="w-full border-2 border-[#EAE3D9] rounded-xl p-3 text-base outline-none focus:border-[#C5A880] transition-colors text-right"
                   dir="ltr"
                   placeholder="05X-XXXXXXX"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#666666] mb-1">דוא"ל</label>
+                <input 
+                  type="email" 
+                  value={newClient.Email}
+                  onChange={(e) => setNewClient({...newClient, Email: e.target.value})}
+                  className="w-full border-2 border-[#EAE3D9] rounded-xl p-3 text-base outline-none focus:border-[#C5A880] transition-colors text-right"
+                  dir="ltr"
+                  placeholder="name@example.com"
                 />
               </div>
 

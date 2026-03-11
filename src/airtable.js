@@ -4,7 +4,7 @@ import Airtable from 'airtable';
 
 const AIRTABLE_PAT = import.meta.env.VITE_AIRTABLE_PAT;
 const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appYYOLggK34YEZsM';
-const TABLE_NAME = import.meta.env.VITE_AIRTABLE_TABLE_NAME || 'Table 1';
+const TABLE_NAME = 'Table 1'; // Strictly set to Table 1 to match Airtable setup
 
 let base;
 if (AIRTABLE_PAT) {
@@ -209,6 +209,7 @@ export async function createAirtableRecord(fields) {
     if (fields['Event Type']) sanitizedPayload['Event Type'] = fields['Event Type'];
     if (fields['Event Date']) sanitizedPayload['Event Date'] = fields['Event Date'];
     if (fields.Notes) sanitizedPayload.Notes = fields.Notes;
+    if (fields.Status) sanitizedPayload.Status = fields.Status; // Ensure Status can be overridden
     
     // Ensure Attachments is always an array of objects with URLs if present
     if (fields.Attachments && Array.isArray(fields.Attachments) && fields.Attachments.length > 0) {

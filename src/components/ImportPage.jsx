@@ -19,8 +19,10 @@ const ImportPage = () => {
     Name: '',
     Company: '',
     Phone: '',
+    Email: '',
     EventType: '',
-    EventDate: '', // Handled as 'Event Date' in airtable
+    EventDate: '', 
+    Notes: ''
   });
 
   const [importState, setImportState] = useState('idle'); // idle | mapping | importing | complete
@@ -72,8 +74,10 @@ const ImportPage = () => {
             Name: firstRowKeys.find(k => k.includes('שם') || k.toLowerCase().includes('name')) || '',
             Company: firstRowKeys.find(k => k.includes('חברה') || k.includes('עסק') || k.toLowerCase().includes('company')) || '',
             Phone: firstRowKeys.find(k => k.includes('טלפון') || k.includes('נייד') || k.toLowerCase().includes('phone')) || '',
+            Email: firstRowKeys.find(k => k.includes('מייל') || k.toLowerCase().includes('email')) || '',
             EventType: firstRowKeys.find(k => k.includes('סוג') || k.toLowerCase().includes('type')) || '',
-            EventDate: firstRowKeys.find(k => k.includes('תאריך') || k.toLowerCase().includes('date')) || ''
+            EventDate: firstRowKeys.find(k => k.includes('תאריך') || k.toLowerCase().includes('date')) || '',
+            Notes: firstRowKeys.find(k => k.includes('הערות') || k.toLowerCase().includes('notes')) || ''
           };
           setColumnMapping(guessedMapping);
           setImportState('mapping');
@@ -116,8 +120,10 @@ const ImportPage = () => {
         Name: row[columnMapping.Name] || 'ללא שם',
         Company: columnMapping.Company ? (row[columnMapping.Company] || '') : '',
         Phone: cleanPhone || 'ללא מידע',
+        Email: columnMapping.Email ? (row[columnMapping.Email] || '') : '',
         'Event Type': columnMapping.EventType ? (row[columnMapping.EventType] || '') : '',
         'Event Date': cleanDate,
+        Notes: columnMapping.Notes ? (row[columnMapping.Notes] || '') : '',
         Status: 'לקוח מפעם' // Default status for legacy imports
       };
     });
@@ -270,6 +276,18 @@ const ImportPage = () => {
                         {headers.map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
                     </div>
+                    {/* Email Mapping */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-2">דוא"ל (אופציונלי)</label>
+                      <select 
+                        value={columnMapping.Email} 
+                        onChange={(e) => setColumnMapping({...columnMapping, Email: e.target.value})}
+                        className="w-full border border-[#EAE3D9] rounded-lg p-2.5 text-sm outline-none focus:border-[#C5A880]"
+                      >
+                        <option value="">-- ללא שיוך --</option>
+                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
                     {/* Event Type Mapping */}
                     <div>
                       <label className="block text-xs font-semibold mb-2">סוג אירוע (אופציונלי)</label>
@@ -288,6 +306,18 @@ const ImportPage = () => {
                       <select 
                         value={columnMapping.EventDate} 
                         onChange={(e) => setColumnMapping({...columnMapping, EventDate: e.target.value})}
+                        className="w-full border border-[#EAE3D9] rounded-lg p-2.5 text-sm outline-none focus:border-[#C5A880]"
+                      >
+                        <option value="">-- ללא שיוך --</option>
+                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                    {/* Notes Mapping */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-2">הערות (אופציונלי)</label>
+                      <select 
+                        value={columnMapping.Notes} 
+                        onChange={(e) => setColumnMapping({...columnMapping, Notes: e.target.value})}
                         className="w-full border border-[#EAE3D9] rounded-lg p-2.5 text-sm outline-none focus:border-[#C5A880]"
                       >
                         <option value="">-- ללא שיוך --</option>
