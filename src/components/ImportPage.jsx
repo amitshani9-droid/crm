@@ -155,7 +155,7 @@ const ImportPage = () => {
           'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') : '',
           'Event Date': cleanDate || '', 
           Notes: columnMapping.Notes ? String(row[columnMapping.Notes] || '') : '',
-          Status: 'חדש' // Forced status as per user request
+          Status: 'פניות חדשות' // Forced status as per user request
         };
       });
 
