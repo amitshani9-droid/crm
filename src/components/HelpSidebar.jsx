@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const HelpSidebar = ({ isOpen, onClose, onOpenFullHelp }) => {
   const copyJoinLink = () => {
-    const link = 'https://crm-tal.vercel.app/join';
+    const link = `${window.location.origin}/join`;
     navigator.clipboard.writeText(link);
     toast.success('הקישור הועתק בהצלחה! ✨');
   };

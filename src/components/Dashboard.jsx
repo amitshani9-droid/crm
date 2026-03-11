@@ -103,8 +103,9 @@ const Dashboard = () => {
   };
 
   const shareJoinLink = () => {
-    navigator.clipboard.writeText('https://crm-tal.vercel.app/join');
-    toast.success('הקישור הועתק: https://crm-tal.vercel.app/join');
+    const link = `${window.location.origin}/join`;
+    navigator.clipboard.writeText(link);
+    toast.success(`הקישור הועתק: ${link}`);
   };
 
   const exportToCSV = () => {
