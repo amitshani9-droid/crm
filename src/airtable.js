@@ -6,9 +6,43 @@ const AIRTABLE_PAT = import.meta.env.VITE_AIRTABLE_PAT;
 const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appYYOLggK34YEZsM';
 const TABLE_NAME = 'Table 1'; // Strictly set to Table 1 to match Airtable setup
 
-let base;
 if (AIRTABLE_PAT) {
   base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
+}
+
+/**
+ * Sanitizes fields before sending to Airtable.
+ * Removes empty strings, nulls, and undefined values to prevent 422 errors.
+ */
+function sanitizeFields(fields) {
+  const sanitized = {};
+  
+  // Basic Fields
+  if (fields.Name) sanitized.Name = String(fields.Name);
+  if (fields.Status) sanitized.Status = String(fields.Status);
+  
+  // Optional Fields - only add if they have a real value
+  const optionalKeys = [
+    'Company', 
+    'Phone', 
+    'Email', 
+    'Event Type', 
+    'Event Date', 
+    'Notes'
+  ];
+
+  optionalKeys.forEach(key => {
+    if (fields[key] !== undefined && fields[key] !== null && String(fields[key]).trim() !== '') {
+      sanitized[key] = fields[key];
+    }
+  });
+
+  // Attachments - only if array and non-empty
+  if (fields.Attachments && Array.isArray(fields.Attachments) && fields.Attachments.length > 0) {
+    sanitized.Attachments = fields.Attachments;
+  }
+
+  return sanitized;
 }
 
 export async function fetchAirtableRecords() {
@@ -153,15 +187,16 @@ export async function importRecordsBatch(records) {
 
     records.forEach(rec => {
       const existingId = existingPhoneMap.get(rec.Phone);
+      const sanitized = sanitizeFields(rec);
+      
       if (existingId) {
-        // If phone exists, don't duplicate. Just update (or ignore).
         toUpdate.push({
           id: existingId,
-          fields: rec
+          fields: sanitized
         });
       } else {
         toCreate.push({
-          fields: rec
+          fields: sanitized
         });
       }
     });
@@ -185,8 +220,11 @@ export async function importRecordsBatch(records) {
 
     return { success: true, count: records.length };
   } catch (err) {
-    console.error("Error during bulk import sequence:", err);
-    return { success: false, count: 0 };
+    console.error("=== BULK IMPORT ERROR ===");
+    console.error("Message:", err.message);
+    if (err.error) console.error("Airtable Error Code:", err.error);
+    if (err.statusCode) console.error("Status Code:", err.statusCode);
+    return { success: false, count: 0, error: err.message };
   }
 }
 
@@ -198,24 +236,7 @@ export async function createAirtableRecord(fields) {
 
   try {
     // Clean and strictly format the payload for Airtable
-    const sanitizedPayload = {
-      Status: fields.Status || 'פניות חדשות',
-      Name: fields.Name || '',
-    };
-    
-    // Only append optional fields if they actually exist (prevent 422 on empty strings)
-    if (fields.Company) sanitizedPayload.Company = fields.Company;
-    if (fields.Phone) sanitizedPayload.Phone = fields.Phone;
-    if (fields.Email) sanitizedPayload.Email = fields.Email;
-    if (fields['Event Type']) sanitizedPayload['Event Type'] = fields['Event Type'];
-    if (fields['Event Date']) sanitizedPayload['Event Date'] = fields['Event Date'];
-    if (fields.Notes) sanitizedPayload.Notes = fields.Notes;
-    if (fields.Status) sanitizedPayload.Status = fields.Status; // Ensure Status can be overridden
-    
-    // Ensure Attachments is always an array of objects with URLs if present
-    if (fields.Attachments && Array.isArray(fields.Attachments) && fields.Attachments.length > 0) {
-       sanitizedPayload.Attachments = fields.Attachments;
-    }
+    const sanitizedPayload = sanitizeFields(fields);
 
     // DEBUG: Show exactly what is being sent to Airtable
     console.log("=== AIRTABLE PAYLOAD ===", sanitizedPayload);

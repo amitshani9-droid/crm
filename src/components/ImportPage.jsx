@@ -70,14 +70,18 @@ const ImportPage = () => {
           
           // Auto-guess mapping based on common Hebrew/English headers
           const firstRowKeys = Object.keys(results.data[0]);
+          const findMatch = (aliases) => firstRowKeys.find(k => 
+            aliases.some(alias => k.toLowerCase().includes(alias.toLowerCase()) || k.includes(alias))
+          ) || '';
+
           const guessedMapping = {
-            Name: firstRowKeys.find(k => k.includes('שם') || k.toLowerCase().includes('name')) || '',
-            Company: firstRowKeys.find(k => k.includes('חברה') || k.includes('עסק') || k.toLowerCase().includes('company')) || '',
-            Phone: firstRowKeys.find(k => k.includes('טלפון') || k.includes('נייד') || k.toLowerCase().includes('phone')) || '',
-            Email: firstRowKeys.find(k => k.includes('מייל') || k.toLowerCase().includes('email')) || '',
-            EventType: firstRowKeys.find(k => k.includes('סוג') || k.toLowerCase().includes('type')) || '',
-            EventDate: firstRowKeys.find(k => k.includes('תאריך') || k.toLowerCase().includes('date')) || '',
-            Notes: firstRowKeys.find(k => k.includes('הערות') || k.toLowerCase().includes('notes')) || ''
+            Name: findMatch(['Name', 'Full Name', 'Customer Name', 'שם מלא', 'שם', 'לקוח']),
+            Company: findMatch(['Company', 'Business', 'עסק', 'חברה']),
+            Phone: findMatch(['Phone', 'Cell', 'Mobile', 'Ph', 'טלפון', 'נייד', 'סלולרי']),
+            Email: findMatch(['Email', 'Mail', 'מייל', 'אימייל']),
+            EventType: findMatch(['Type', 'Event Type', 'סוג', 'סוג אירוע']),
+            EventDate: findMatch(['Date', 'Event Date', 'תאריך', 'תאריך אירוע']),
+            Notes: findMatch(['Notes', 'Comments', 'הערות', 'מידע נוסף'])
           };
           setColumnMapping(guessedMapping);
           setImportState('mapping');
@@ -99,34 +103,61 @@ const ImportPage = () => {
     setProgress({ current: 0, total: parsedData.length });
     
     // 1. Transform parsed CSV rows into Airtable-ready objects
-    const cleanedRecords = parsedData.map(row => {
-      // Clean Phone: Keep only digits
-      let cleanPhone = (row[columnMapping.Phone] || '').replace(/\D/g, '');
-      if (cleanPhone && !cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone; // Ensure leading zero for Israel format
+    const cleanedRecords = parsedData
+      .filter(row => {
+        // Skip completely empty rows
+        const values = Object.values(row).join('').trim();
+        if (!values) return false;
 
-      // Clean Date: Attempt to parse
-      let cleanDate = null;
-      if (columnMapping.EventDate && row[columnMapping.EventDate]) {
-         const rawDateStr = row[columnMapping.EventDate];
-         // Simple parsing logic: if it's DD/MM/YYYY or MM/DD/YYYY, native Date might fail depending on locale, 
-         // but we assume standard ISO or let Date() do its best and cast to ISO string for Airtable.
-         const d = new Date(rawDateStr);
-         if (!isNaN(d.getTime())) {
-             cleanDate = d.toISOString().split('T')[0]; // Format for airtable Date field (YYYY-MM-DD)
-         }
-      }
+        const hasName = columnMapping.Name && row[columnMapping.Name]?.toString().trim();
+        const hasPhone = columnMapping.Phone && row[columnMapping.Phone]?.toString().trim();
+        return hasName && hasPhone; // SKIP if missing Name or Phone
+      })
+      .map(row => {
+        // Clean Phone: Keep only digits and ensure it's a string
+        let rawPhone = columnMapping.Phone ? String(row[columnMapping.Phone] || '') : '';
+        let cleanPhone = rawPhone.replace(/\D/g, '');
+        if (cleanPhone && !cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone; 
 
-      return {
-        Name: row[columnMapping.Name] || 'ללא שם',
-        Company: columnMapping.Company ? (row[columnMapping.Company] || '') : '',
-        Phone: cleanPhone || 'ללא מידע',
-        Email: columnMapping.Email ? (row[columnMapping.Email] || '') : '',
-        'Event Type': columnMapping.EventType ? (row[columnMapping.EventType] || '') : '',
-        'Event Date': cleanDate,
-        Notes: columnMapping.Notes ? (row[columnMapping.Notes] || '') : '',
-        Status: 'סגור' // Default status for legacy imports (Closed)
-      };
-    });
+        // Clean Date: Robust parsing to YYYY-MM-DD
+        let cleanDate = null;
+        if (columnMapping.EventDate && row[columnMapping.EventDate]) {
+          const rawDateStr = row[columnMapping.EventDate].toString().trim();
+          
+          if (rawDateStr) {
+            // Case 1: DD/MM/YYYY
+            if (rawDateStr.includes('/')) {
+              const parts = rawDateStr.split('/');
+              if (parts.length === 3) {
+                if (parts[0].length <= 2 && parts[2].length === 4) {
+                  cleanDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                } else if (parts[0].length === 4) {
+                  cleanDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                }
+              }
+            } 
+            
+            // Fallback to native parsing
+            if (!cleanDate) {
+              const d = new Date(rawDateStr);
+              if (!isNaN(d.getTime())) {
+                cleanDate = d.toISOString().split('T')[0]; 
+              }
+            }
+          }
+        }
+
+        return {
+          Name: columnMapping.Name ? String(row[columnMapping.Name] || 'ללא שם') : 'ללא שם',
+          Company: columnMapping.Company ? String(row[columnMapping.Company] || '') : '',
+          Phone: cleanPhone || '',
+          Email: columnMapping.Email ? String(row[columnMapping.Email] || '') : '',
+          'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') : '',
+          'Event Date': cleanDate || '', 
+          Notes: columnMapping.Notes ? String(row[columnMapping.Notes] || '') : '',
+          Status: 'חדש' // Forced status as per user request
+        };
+      });
 
     // 2. Batch Engine
     const BATCH_SIZE = 10; // Airtable create API limit
@@ -142,6 +173,10 @@ const ImportPage = () => {
         successCount += batchResult.count;
       } else {
         failedCount += batch.length;
+        // DETAILED LOGGING: Show exact row data that failed
+        console.error(`=== BATCH FAILED (i=${i}) ===`);
+        console.error("The following records caused a 422 or other error:", batch);
+        toast.error(`שגיאה בייבוא שורות ${i+1}-${i + batch.length}. בדקי את הקונסול לפרטים.`);
       }
 
       setProgress({ current: Math.min(i + BATCH_SIZE, cleanedRecords.length), total: cleanedRecords.length });
