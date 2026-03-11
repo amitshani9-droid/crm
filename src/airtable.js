@@ -6,6 +6,7 @@ const AIRTABLE_PAT = import.meta.env.VITE_AIRTABLE_PAT;
 const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appYYOLggK34YEZsM';
 const TABLE_NAME = 'Table 1'; // Strictly set to Table 1 to match Airtable setup
 
+let base;
 if (AIRTABLE_PAT) {
   base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
 }
