@@ -250,6 +250,7 @@ const ContactCard = ({ data, onDelete }) => {
                   </div>
                 )}
               </div>
+            </div>
             <div className="flex gap-1 ml-[-0.5rem] mt-[-0.5rem]">
               <button 
                 disabled={isDeleting}
@@ -266,7 +267,6 @@ const ContactCard = ({ data, onDelete }) => {
               </button>
             </div>
           </div>
-        </div>
           
         <div className="flex flex-col gap-3 text-base text-[#666666]">
             {EventDate && (

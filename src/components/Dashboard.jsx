@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Link as LinkIcon, Users, CalendarDays, Briefcase, Download, TrendingUp, Database, Search, X, Loader2, MessageCircle, BarChart3 } from 'lucide-react';
+import { Plus, Link as LinkIcon, Users, CalendarDays, Briefcase, Download, TrendingUp, Database, Search, X, Loader2, MessageCircle, BarChart3, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { fetchAirtableRecords, createAirtableRecord } from '../airtable';
 import KanbanBoard from './KanbanBoard';
 import { Toaster, toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import HelpSidebar from './HelpSidebar';
+import HelpModal from './HelpModal';
+import GuidedTour from './GuidedTour';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -12,6 +15,11 @@ const Dashboard = () => {
   const [focusMode, setFocusMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Help & Tour State
+  const [showHelpSidebar, setShowHelpSidebar] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [runTour, setRunTour] = useState(false);
+
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -23,6 +31,37 @@ const Dashboard = () => {
     ['Event Date']: '',
     Notes: ''
   });
+
+  const tourSteps = [
+    {
+      target: '#stats-grid',
+      title: 'תמונת המצב שלך',
+      content: 'כאן תראי את תמונת המצב של העסק שלך היום - פניות חדשות, סגירות ויחס המרה.'
+    },
+    {
+      target: '#kanban-column-1',
+      title: 'ניהול הלידים',
+      content: 'כאן יופיעו אוטומטית אנשים שמילאו את הטופס באתר שלך. פשוט גררי אותם בין העמודות.'
+    },
+    {
+      target: '#focus-mode-btn',
+      title: 'מצב פוקוס',
+      content: 'בלחיצה כאן, המערכת תסנן עבורך רק את מה שדחוף להיום - אירועים קרובים ופניות חדשות.'
+    }
+  ];
+
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('crm_has_seen_tour');
+    if (!hasSeenTour) {
+      setTimeout(() => setRunTour(true), 1500); // Small delay for entrance animation
+    }
+  }, []);
+
+  const handleTourComplete = () => {
+    setRunTour(false);
+    localStorage.setItem('crm_has_seen_tour', 'true');
+    toast.success('יוצאים לדרך! בהצלחה 🥂');
+  };
 
   useEffect(() => {
     const loadData = async () => {
