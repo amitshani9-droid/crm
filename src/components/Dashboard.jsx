@@ -257,6 +257,23 @@ const Dashboard = () => {
             <LinkIcon size={18} className="text-[#333333]"/>
             <span className="hidden md:inline">טופס הוספה חיצוני</span>
           </button>
+
+          <button
+            id="focus-mode-btn"
+            onClick={() => setFocusMode(!focusMode)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all border shadow-sm active:scale-95 ${focusMode ? 'bg-[#333333] text-[#C5A880] border-[#333333]' : 'bg-white text-[#666666] border-[#EAE3D9] hover:bg-[#FDFBF7]'}`}
+          >
+            {focusMode ? <EyeOff size={18} /> : <Eye size={18} className="text-[#C5A880]" />}
+            <span className="hidden md:inline">{focusMode ? 'בטל סינון פוקוס' : 'מצב פוקוס'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowHelpSidebar(true)}
+            className="flex items-center gap-2 bg-[#F5F2EB] text-[#2C8A99] px-4 py-3 rounded-2xl text-base font-semibold transition-all border border-[#2C8A99]/20 hover:bg-[#2C8A99]/5 shadow-sm active:scale-95"
+          >
+            <HelpCircle size={18} strokeWidth={2.5} />
+            <span className="hidden md:inline">עזרה</span>
+          </button>
         </div>
       </header>
 
@@ -267,8 +284,16 @@ const Dashboard = () => {
              <h1 className="text-xl font-bold text-[#333333]">היי טל ✨</h1>
              <p className="text-[#9BACA4] text-sm">זה המצב להיום בלוח שלך</p>
            </div>
-           <div className="w-10 h-10 bg-gradient-to-br from-[#EAE3D9] to-[#C5A880] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">
-             TS
+           <div className="flex items-center gap-3">
+             <button 
+               onClick={() => setShowHelpSidebar(true)}
+               className="p-2.5 bg-white border border-[#EAE3D9] rounded-xl text-[#2C8A99] active:scale-95 transition-all shadow-sm"
+             >
+               <HelpCircle size={22} />
+             </button>
+             <div className="w-10 h-10 bg-gradient-to-br from-[#EAE3D9] to-[#C5A880] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">
+               TS
+             </div>
            </div>
         </div>
       </header>
@@ -288,7 +313,7 @@ const Dashboard = () => {
         </div>
         
         {/* Analytics & Smart Stats Area */}
-        <div className="flex flex-col gap-4 shrink-0">
+        <div id="stats-grid" className="flex flex-col gap-4 shrink-0">
           
           {/* Smart Stats Bento */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -444,6 +469,14 @@ const Dashboard = () => {
           ) : (
             <KanbanBoard 
               inquiries={inquiries.filter(i => {
+                // First apply Focus Mode filter if active
+                if (focusMode) {
+                  const isNew = i.Status === 'פניות חדשות' || !i.Status;
+                  const hasUpcomingEvent = i._rawDate && (new Date(i._rawDate) - new Date()) / (1000 * 60 * 60 * 24) <= 3;
+                  if (!isNew && !hasUpcomingEvent) return false;
+                }
+
+                // Then apply search query filter
                 if (!searchQuery) return true;
                 const q = searchQuery.toLowerCase();
                 return (
@@ -570,6 +603,28 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Help & Tour Components */}
+      <HelpSidebar 
+        isOpen={showHelpSidebar} 
+        onClose={() => setShowHelpSidebar(false)} 
+        onOpenFullHelp={() => {
+          setShowHelpSidebar(false);
+          setShowHelpModal(true);
+        }}
+      />
+      
+      <HelpModal 
+        isOpen={showHelpModal} 
+        onClose={() => setShowHelpModal(false)} 
+      />
+
+      {runTour && (
+        <GuidedTour 
+          steps={tourSteps} 
+          onComplete={handleTourComplete} 
+        />
       )}
     </div>
   );

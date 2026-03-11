@@ -41,11 +41,11 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
 
   return (
     <div className="flex gap-6 h-full w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-4 hide-scrollbar">
-      {columns.map(col => {
+      {columns.map((col, index) => {
         const columnInquiries = getInquiriesForColumn(col.id);
         
         return (
-          <div key={col.id} className="min-w-[320px] w-[320px] max-w-[320px] flex-shrink-0 flex flex-col snap-center">
+          <div key={col.id} id={index === 0 ? 'kanban-column-1' : undefined} className="min-w-[320px] w-[320px] max-w-[320px] flex-shrink-0 flex flex-col snap-center">
             {/* We still use KanbanColumn for the drop logic, but we can pass the simplified title */}
             <KanbanColumn 
               id={col.id}
