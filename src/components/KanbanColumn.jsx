@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ContactCard from './ContactCard';
 
 const KanbanColumn = ({ id, title, inquiries, onDropRecord, onDeleteRecord }) => {
@@ -10,7 +10,10 @@ const KanbanColumn = ({ id, title, inquiries, onDropRecord, onDeleteRecord }) =>
   };
 
   const handleDragLeave = (e) => {
-    setIsDragOver(false);
+    // Only reset if leaving the column itself, not a child element
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
   };
 
   const handleDrop = (e) => {

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Calendar, MessageSquare, Phone, Mail, User, Info, Briefcase } from 'lucide-react';
-import { createAirtableRecord } from '../airtable';
+import { createAirtableRecord, isValidIsraeliPhone } from '../airtable';
 
 const JoinPage = () => {
   const [formData, setFormData] = useState({
@@ -32,6 +32,12 @@ const JoinPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.Phone && !isValidIsraeliPhone(formData.Phone)) {
+      alert('מספר הטלפון אינו תקין. אנא הזן מספר ישראלי תקני (05X-XXXXXXX).');
+      return;
+    }
+
     setIsSubmitting(true);
     
     // Add default status and format data for Airtable

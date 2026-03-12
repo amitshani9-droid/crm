@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Sparkles } from 'lucide-react';
 
 const GuidedTour = ({ steps, onComplete }) => {
@@ -16,13 +16,15 @@ const GuidedTour = ({ steps, onComplete }) => {
       }
     };
 
+    const scrollContainer = document.querySelector('main') || window;
+
     updateRect();
     window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect);
+    scrollContainer.addEventListener('scroll', updateRect);
 
     return () => {
       window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect);
+      scrollContainer.removeEventListener('scroll', updateRect);
     };
   }, [step.target, currentStep]);
 
@@ -48,6 +50,11 @@ const GuidedTour = ({ steps, onComplete }) => {
   const holeY = targetRect.top - padding;
   const holeWidth = targetRect.width + padding * 2;
   const holeHeight = targetRect.height + padding * 2;
+
+  const popoverHeight = 260;
+  const popoverTop = holeY + holeHeight + 20 + popoverHeight > window.innerHeight
+    ? holeY - popoverHeight - 20 // Place above if not enough space below
+    : holeY + holeHeight + 20;
 
   return (
     <div className="fixed inset-0 z-[110] overflow-hidden pointer-events-none" dir="rtl">
@@ -84,7 +91,7 @@ const GuidedTour = ({ steps, onComplete }) => {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         style={{
           position: 'absolute',
-          top: holeY + holeHeight + 20,
+          top: popoverTop,
           left: Math.max(20, Math.min(window.innerWidth - 340, holeX + holeWidth / 2 - 160)),
           width: 320,
         }}

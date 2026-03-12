@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon, Trash2 } from 'lucide-react';
-import { updateAirtableRecord, uploadFileToRecord, deleteAirtableRecord } from '../airtable';
+import { updateAirtableRecord, uploadFileToRecord, isValidIsraeliPhone } from '../airtable';
 import toast from 'react-hot-toast';
 
 const ContactCard = ({ data, onDelete }) => {
@@ -31,30 +31,18 @@ const ContactCard = ({ data, onDelete }) => {
     Phone: Phone || '',
     Email: Email || '',
     'Event Type': EventType || '',
-    'Event Date': localData._rawDate || ''
+    'Event Date': localData?._rawDate || ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleDelete = async (e) => {
+  const handleDelete = (e) => {
     e.stopPropagation();
-    
-    const confirmed = window.confirm("האם את בטוחה שברצונך למחוק את הלקוח? פעולה זו אינה ניתנת לביטול.");
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-    const success = await deleteAirtableRecord(id);
-    setIsDeleting(false);
-
-    if (success) {
-      toast.success('הלקוח נמחק בהצלחה');
-      if (onDelete) onDelete(id);
-    } else {
-      toast.error('שגיאה במחיקת הלקוח');
-    }
+    if (onDelete) onDelete(id, localData);
   };
 
   const getInitials = (nameStr) => {
@@ -117,6 +105,14 @@ const ContactCard = ({ data, onDelete }) => {
 
   const handleSaveCard = async (e) => {
     e.stopPropagation();
+    if (!editForm.Name.trim()) {
+      toast.error('חובה להזין את שם איש הקשר');
+      return;
+    }
+    if (editForm.Phone && !isValidIsraeliPhone(editForm.Phone)) {
+      toast.error('מספר הטלפון אינו תקין');
+      return;
+    }
     setIsSaving(true);
     
     let parsedDisplayDate = editForm['Event Date'];
@@ -174,14 +170,40 @@ const ContactCard = ({ data, onDelete }) => {
     }
   };
 
+  const handleDeleteAttachment = async (indexToRemove) => {
+    const updatedAttachments = localAttachments.filter((_, i) => i !== indexToRemove);
+    const success = await updateAirtableRecord(id, { Attachments: updatedAttachments });
+    if (success) {
+      setLocalAttachments(updatedAttachments);
+      toast.success('הקובץ הוסר');
+    } else {
+      toast.error('שגיאה בהסרת הקובץ');
+    }
+  };
+
   const handleDragStart = (e) => {
     e.dataTransfer.setData('recordId', id);
     // Slight opacity change on the ghost image doesn't work well natively, but we can set effectAllowed
     e.dataTransfer.effectAllowed = "move";
   };
 
+  const whatsappTemplates = [
+    { label: '👋 הודעה ראשונית', message: `היי ${Name || ''}, זאת טל שני הפקת אירועים. מוזמנים ליצור קשר בכל שאלה! 💫` },
+    { label: '🔁 מעקב', message: `היי ${Name || ''}, רציתי לבדוק אם יש שאלות על ההצעה שלנו 😊` },
+    { label: '📅 לפני האירוע', message: `היי ${Name || ''}, מתרגשת לקראת האירוע שלכם! יש עוד פרטים לתאם? ✨` },
+    { label: '🥂 אחרי האירוע', message: `היי ${Name || ''}, תודה שבחרתם בטל שני הפקת אירועים! 🥂` },
+  ];
+
+  const openWhatsAppWithTemplate = (message) => {
+    if (!Phone) { toast.error('חסר מספר טלפון'); return; }
+    const digits = Phone.replace(/\D/g, '');
+    const waNumber = digits.startsWith('0') ? `972${digits.substring(1)}` : `972${digits}`;
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    setShowTemplates(false);
+  };
+
   return (
-    <motion.div 
+    <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -329,7 +351,6 @@ const ContactCard = ({ data, onDelete }) => {
               onChange={(e) => setEditedNote(e.target.value)}
               className="w-full bg-white text-[#333333] text-base p-4 rounded-xl border-2 border-[#C5A880]/50 focus:border-[#C5A880] outline-none resize-none min-h-[80px] shadow-sm transition-colors"
               placeholder="הקלד כאן הערה או סטטוס חדש..."
-              onBlur={handleSaveNote}
               onClick={(e) => e.stopPropagation()}
             />
             <button 
@@ -345,7 +366,7 @@ const ContactCard = ({ data, onDelete }) => {
         {!Notes && !isEditingNote && (
            <button 
              onClick={(e) => { e.stopPropagation(); setIsEditingNote(true); }}
-             className="text-[#9BACA4] hover:text-[#C5A880] italic text-sm text-right px-1 w-full text-right transition-colors"
+             className="text-[#9BACA4] hover:text-[#C5A880] italic text-sm text-right px-1 w-full transition-colors"
            >
              לחצי להוספת הערה...
            </button>
@@ -397,11 +418,18 @@ const ContactCard = ({ data, onDelete }) => {
                    <FileIcon size={20} className="text-[#9BACA4] group-hover:text-[#C5A880] transition-colors" />
                 )}
                 
-                {/* Tooltip Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
+                {/* Tooltip Overlay with delete */}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
                   <span className="text-[0.6rem] text-white text-center leading-tight truncate w-full px-0.5" dir="ltr">
                     {file.filename?.substring(0, 10)}{file.filename?.length > 10 ? '...' : ''}
                   </span>
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteAttachment(index); }}
+                    className="text-red-400 hover:text-red-300 transition-colors"
+                    title="מחק קובץ"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  </button>
                 </div>
               </a>
             ))}
@@ -409,9 +437,22 @@ const ContactCard = ({ data, onDelete }) => {
         )}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-[#EAE3D9]/60">
-        <button 
-          onClick={handleWhatsApp} 
+      <div className="mt-4 pt-4 border-t border-[#EAE3D9]/60 relative">
+        {showTemplates && (
+          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-[#EAE3D9] rounded-xl shadow-lg z-10 overflow-hidden">
+            {whatsappTemplates.map((t, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); openWhatsAppWithTemplate(t.message); }}
+                className="w-full text-right px-4 py-3 text-sm font-semibold text-[#333333] hover:bg-[#FDFBF7] border-b border-[#EAE3D9]/50 last:border-0 transition-colors"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowTemplates(prev => !prev); }}
           className="w-full flex justify-center items-center gap-3 bg-[#25D366] hover:bg-[#128C7E] text-white px-4 py-3.5 rounded-xl text-base font-bold transition-all shadow-md active:scale-95"
         >
           <MessageCircle size={20} />

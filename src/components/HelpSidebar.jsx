@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Info, MousePointer2, Smartphone, Paperclip, Copy, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';

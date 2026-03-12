@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"c:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\\\\\u200F\\\\u200Fתיקיה חדשה \\(4\\)\" -maxdepth 1 -type f \\\\\\( -name \"*.json\" -o -name \"*.md\" -o -name \"*.html\" -o -name \"*.config.*\" \\\\\\))",
+      "Bash(find \"c:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\\\\\u200F\\\\u200Fתיקיה חדשה \\(4\\)\" -name \"*.md\" -type f)"
+    ]
+  }
+}

@@ -1,6 +1,5 @@
-import React from 'react';
 import KanbanColumn from './KanbanColumn';
-import { updateAirtableRecord } from '../airtable';
+import { updateAirtableRecord, deleteAirtableRecord } from '../airtable';
 import toast from 'react-hot-toast';
 
 const KanbanBoard = ({ inquiries, setInquiries }) => {
@@ -21,22 +20,68 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
     const recordToUpdate = inquiries.find(inq => inq.id === recordId);
     if (!recordToUpdate || recordToUpdate.Status === newStatusId) return;
 
+    const previousStatus = recordToUpdate.Status;
+
     // Optimistic UI update
-    setInquiries(prev => prev.map(inq => 
+    setInquiries(prev => prev.map(inq =>
       inq.id === recordId ? { ...inq, Status: newStatusId } : inq
     ));
 
     // Update Airtable via SDK
     const success = await updateAirtableRecord(recordId, { Status: newStatusId });
     if (!success) {
+      // Roll back on failure
+      setInquiries(prev => prev.map(inq =>
+        inq.id === recordId ? { ...inq, Status: previousStatus } : inq
+      ));
       toast.error('שגיאה בעדכון הסטטוס');
     } else {
       toast.success('הסטטוס עודכן בהצלחה! ✨');
     }
   };
 
-  const handleDeleteRecord = (recordId) => {
+  const handleDeleteRecord = (recordId, recordData) => {
+    // Optimistically remove from UI immediately
     setInquiries(prev => prev.filter(inq => inq.id !== recordId));
+
+    let undone = false;
+
+    // Show undo toast for 5 seconds
+    toast(
+      (t) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span>הלקוח נמחק</span>
+          <button
+            onClick={() => {
+              undone = true;
+              setInquiries(prev => [...prev, recordData]);
+              toast.dismiss(t.id);
+              toast.success('המחיקה בוטלה ✅');
+            }}
+            style={{
+              background: '#C5A880',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '4px 12px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            בטל
+          </button>
+        </div>
+      ),
+      { duration: 5000 }
+    );
+
+    // Perform actual deletion after 5 seconds if not undone
+    setTimeout(async () => {
+      if (!undone) {
+        await deleteAirtableRecord(recordId);
+      }
+    }, 5000);
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle, Database, AlertCircle, FileText, ArrowRight, X } from 'lucide-react';
 import Papa from 'papaparse';
@@ -189,7 +189,7 @@ const ImportPage = () => {
     setFile(null);
     setParsedData([]);
     setHeaders([]);
-    setColumnMapping({ Name: '', Company: '', Phone: '', EventType: '', EventDate: '' });
+    setColumnMapping({ Name: '', Company: '', Phone: '', Email: '', EventType: '', EventDate: '', Notes: '' });
     setImportState('idle');
     setProgress({ current: 0, total: 0 });
     setImportResults({ success: 0, failed: 0 });
@@ -381,10 +381,10 @@ const ImportPage = () => {
               >
                 <div className="relative w-24 h-24 mx-auto mb-6">
                   <svg className="animate-spin w-full h-full text-[#EAE3D9]" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" />
                   </svg>
                   <svg className="absolute top-0 left-0 w-full h-full text-[#C5A880]" viewBox="0 0 100 100" style={{ strokeDasharray: 283, strokeDashoffset: 283 - (progress.current / progress.total) * 283, transition: 'stroke-dashoffset 0.5s ease' }}>
-                    <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8" strokeLinecap="round" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center font-bold text-lg">
                     {Math.round((progress.current / progress.total) * 100)}%

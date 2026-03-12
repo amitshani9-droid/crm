@@ -3,7 +3,7 @@
 import Airtable from 'airtable';
 
 const AIRTABLE_PAT = import.meta.env.VITE_AIRTABLE_PAT;
-const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID || 'appYYOLggK34YEZsM';
+const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
 const TABLE_NAME = 'Table 1'; // Strictly set to Table 1 to match Airtable setup
 
 let base;
@@ -40,6 +40,16 @@ export function sanitizePhone(phone) {
   // 4. Return standard 10-digit local format if valid length
   // (Standard Israeli mobile: 05X-XXXXXXX)
   return digits;
+}
+
+/**
+ * Validates an Israeli phone number (after sanitization).
+ * Accepts mobile (05X) and landline (0X) formats.
+ */
+export function isValidIsraeliPhone(phone) {
+  if (!phone) return false;
+  const sanitized = sanitizePhone(phone);
+  return /^0[0-9]{8,9}$/.test(sanitized);
 }
 
 /**
@@ -81,10 +91,10 @@ export async function fetchAirtableRecords() {
   if (!base) {
     console.warn("Airtable PAT missing. Make sure VITE_AIRTABLE_PAT is set in your .env file. Returning dummy data for preview.");
     return [
-      { id: '1', Status: 'פניות חדשות', Name: 'דני כהן', Phone: '0541234567', Email: 'dani@example.com', 'Event Type': 'חתונת שישי', 'Event Date': '2026-05-15', Notes: 'פניה מהאתר, מחפש מקום פתוח' },
-      { id: '2', Status: 'פניות חדשות', Name: 'מיכל לוי', Phone: '0529876543', Email: 'michal@example.com', 'Event Type': 'בר מצווה' },
-      { id: '3', Status: 'בטיפול', Name: 'רועי ונועה', Phone: '0501112233', Email: 'rn@example.com', 'Event Type': 'חתונה', Notes: 'פגישת טעימות בשבוע הבא' },
-      { id: '4', Status: 'סגור', Name: 'משפחת ישראלי', Phone: '0534445566', Email: 'israeli@example.com', 'Event Type': 'בת מצווה', Notes: 'לוודא הגעת ספקים ב-16:00' }
+      { id: '1', Status: 'פניות חדשות', Name: 'דני כהן', Phone: '0541234567', Email: 'dani@example.com', 'Event Type': 'חתונת שישי', 'Event Date': '15/05/2026', _rawDate: '2026-05-15', Notes: 'פניה מהאתר, מחפש מקום פתוח', Attachments: [] },
+      { id: '2', Status: 'פניות חדשות', Name: 'מיכל לוי', Phone: '0529876543', Email: 'michal@example.com', 'Event Type': 'בר מצווה', _rawDate: null, Attachments: [] },
+      { id: '3', Status: 'בטיפול', Name: 'רועי ונועה', Phone: '0501112233', Email: 'rn@example.com', 'Event Type': 'חתונה', Notes: 'פגישת טעימות בשבוע הבא', _rawDate: null, Attachments: [] },
+      { id: '4', Status: 'סגור', Name: 'משפחת ישראלי', Phone: '0534445566', Email: 'israeli@example.com', 'Event Type': 'בת מצווה', Notes: 'לוודא הגעת ספקים ב-16:00', _rawDate: null, Attachments: [] }
     ];
   }
 
@@ -155,8 +165,12 @@ export async function uploadFileToRecord(recordId, file, existingAttachments = [
     // 1. Upload to permanent hosting (Cloudinary) to get a secure public URL
     const formData = new FormData();
     formData.append('file', file);
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dahpqxpbb';
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary env vars missing: VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET must be set');
+    }
 
     formData.append('upload_preset', uploadPreset); 
     
@@ -271,9 +285,6 @@ export async function createAirtableRecord(fields) {
     // Clean and strictly format the payload for Airtable
     const sanitizedPayload = sanitizeFields(fields);
 
-    // DEBUG: Show exactly what is being sent to Airtable
-    console.log("=== AIRTABLE PAYLOAD ===", sanitizedPayload);
-    
     await base(TABLE_NAME).create([
       {
         fields: sanitizedPayload

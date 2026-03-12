@@ -1,7 +1,6 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
-import JoinPage from './components/JoinPage'; // We will create this next
+import JoinPage from './components/JoinPage';
 import ImportPage from './components/ImportPage';
 
 function App() {
