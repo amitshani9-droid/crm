@@ -70,8 +70,10 @@ const ContactCard = ({ data, onDelete }) => {
   const handleWhatsApp = (e) => {
     e.stopPropagation();
     if (Phone && Name) {
-      const cleanPhone = Phone.replace(/\D/g, '');
-      const waNumber = `972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}`;
+      // Input is standard 10-digit local format (e.g., 0545773044)
+      // Strip non-digits just in case, then remove leading '0' and prepend '972'
+      const digits = Phone.replace(/\D/g, '');
+      const waNumber = digits.startsWith('0') ? `972${digits.substring(1)}` : `972${digits}`;
       
       const message = encodeURIComponent(`היי ${Name}, זאת טל שני הפקת אירועים. מוזמנים ליצור קשר בכל שאלה! 💫`);
       

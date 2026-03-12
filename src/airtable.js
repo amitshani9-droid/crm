@@ -12,6 +12,37 @@ if (AIRTABLE_PAT) {
 }
 
 /**
+ * Robustly sanitizes phone numbers for Israeli local 10-digit format.
+ * Handles decimals (e.g. .00 from CSV), prefixes (972), and missing leading 0s.
+ */
+export function sanitizePhone(phone) {
+  if (!phone) return '';
+  
+  // 1. Convert to string and split by . to remove anything after decimal point
+  let str = String(phone).split('.')[0];
+  
+  // 2. Strip all non-digit characters
+  let digits = str.replace(/\D/g, '');
+  
+  if (!digits) return '';
+
+  // 3. Handle international/local prefixes
+  // Case: Starts with 972... -> replace with 0
+  if (digits.startsWith('972')) {
+    digits = '0' + digits.substring(3);
+  }
+  
+  // Case: Starts with 5... (missing leading 0) -> prepend 0
+  else if (digits.startsWith('5')) {
+    digits = '0' + digits;
+  }
+  
+  // 4. Return standard 10-digit local format if valid length
+  // (Standard Israeli mobile: 05X-XXXXXXX)
+  return digits;
+}
+
+/**
  * Sanitizes fields before sending to Airtable.
  * Removes empty strings, nulls, and undefined values to prevent 422 errors.
  */
@@ -21,11 +52,11 @@ function sanitizeFields(fields) {
   // Basic Fields
   if (fields.Name) sanitized.Name = String(fields.Name);
   if (fields.Status) sanitized.Status = String(fields.Status);
+  if (fields.Phone) sanitized.Phone = sanitizePhone(fields.Phone);
   
   // Optional Fields - only add if they have a real value
   const optionalKeys = [
     'Company', 
-    'Phone', 
     'Email', 
     'Event Type', 
     'Event Date', 
@@ -100,10 +131,11 @@ export async function updateAirtableRecord(recordId, fields) {
   }
 
   try {
+    const sanitizedFields = sanitizeFields(fields);
     await base(TABLE_NAME).update([
       {
         id: recordId,
-        fields: fields
+        fields: sanitizedFields
       }
     ]);
     return true;

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle, Database, AlertCircle, FileText, ArrowRight, X } from 'lucide-react';
 import Papa from 'papaparse';
-import { importRecordsBatch } from '../airtable';
+import { importRecordsBatch, sanitizePhone } from '../airtable';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -114,10 +114,9 @@ const ImportPage = () => {
         return hasName && hasPhone; // SKIP if missing Name or Phone
       })
       .map(row => {
-        // Clean Phone: Keep only digits and ensure it's a string
-        let rawPhone = columnMapping.Phone ? String(row[columnMapping.Phone] || '') : '';
-        let cleanPhone = rawPhone.replace(/\D/g, '');
-        if (cleanPhone && !cleanPhone.startsWith('0')) cleanPhone = '0' + cleanPhone; 
+        // Use central sanitization logic
+        const rawPhone = columnMapping.Phone ? row[columnMapping.Phone] : '';
+        const cleanPhone = sanitizePhone(rawPhone);
 
         // Clean Date: Robust parsing to YYYY-MM-DD
         let cleanDate = null;
@@ -150,7 +149,7 @@ const ImportPage = () => {
         return {
           Name: columnMapping.Name ? String(row[columnMapping.Name] || 'ללא שם') : 'ללא שם',
           Company: columnMapping.Company ? String(row[columnMapping.Company] || '') : '',
-          Phone: cleanPhone || '',
+          Phone: cleanPhone,
           Email: columnMapping.Email ? String(row[columnMapping.Email] || '') : '',
           'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') : '',
           'Event Date': cleanDate || '', 
