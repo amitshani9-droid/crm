@@ -61,7 +61,7 @@ function sanitizeFields(fields) {
   
   // Basic Fields
   if (fields.Name) sanitized.Name = String(fields.Name);
-  if (fields.Status) sanitized.Status = String(fields.Status);
+  if (fields.Status) sanitized.Status = String(fields.Status).trim();
   if (fields.Phone) sanitized.Phone = sanitizePhone(fields.Phone);
   
   // Optional Fields - only add if they have a real value
@@ -100,6 +100,12 @@ export async function fetchAirtableRecords() {
 
   try {
     const records = await base(TABLE_NAME).select().all();
+    
+    // DEBUG: Log one sample record to verify field names and data types accurately
+    if (records.length > 0) {
+      console.log("Sample Airtable Record Fields:", JSON.stringify(records[0].fields, null, 2));
+    }
+
     return records.map(record => {
       // CRITICAL FIX: Prioritize Airtable's internal record.id for all updates to prevent 422 errors.
       // We store it as 'id' so components can pass it back to updateAirtableRecord.
@@ -142,6 +148,8 @@ export async function updateAirtableRecord(recordId, fields) {
 
   try {
     const sanitizedFields = sanitizeFields(fields);
+    console.log(`Updating Record ${recordId} with fields:`, sanitizedFields);
+    
     await base(TABLE_NAME).update([
       {
         id: recordId,
@@ -150,7 +158,18 @@ export async function updateAirtableRecord(recordId, fields) {
     ]);
     return true;
   } catch (error) {
-    console.error("Error updating Airtable record:", error);
+    console.error("=== AIRTABLE UPDATE ERROR ===");
+    console.error("Record ID:", recordId);
+    console.error("Fields:", fields);
+    console.error("Error Message:", error.message);
+    if (error.error) console.error("Airtable Error Code:", error.error);
+    if (error.statusCode) console.error("Status Code:", error.statusCode);
+    
+    // Attempt to log more details if available in the error object
+    try {
+      if (error.body) console.error("Error Body:", JSON.stringify(error.body, null, 2));
+    } catch (e) {}
+    
     return false;
   }
 }

@@ -5,9 +5,9 @@ import toast from 'react-hot-toast';
 const KanbanBoard = ({ inquiries, setInquiries }) => {
   // Simplified Apple-style Columns
   const columns = [
-    { id: 'פניות חדשות', title: 'חדשים' },
-    { id: 'בטיפול', title: 'בטיפול' },
-    { id: 'סגור', title: 'סגורים' }
+    { id: 'פניות חדשות'.trim(), title: 'חדשים' },
+    { id: 'בטיפול'.trim(), title: 'בטיפול' },
+    { id: 'סגור'.trim(), title: 'סגורים' }
   ];
 
   const getInquiriesForColumn = (statusId) => {
