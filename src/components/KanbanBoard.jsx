@@ -1,13 +1,15 @@
+import { useRef } from 'react';
 import KanbanColumn from './KanbanColumn';
 import { updateAirtableRecord, deleteAirtableRecord } from '../airtable';
 import toast from 'react-hot-toast';
+import { useSettings } from '../hooks/useSettings';
 
 const KanbanBoard = ({ inquiries, setInquiries }) => {
-  // Simplified Apple-style Columns
+  const { settings } = useSettings();
   const columns = [
-    { id: 'פניות חדשות'.trim(), title: 'חדשים' },
-    { id: 'בטיפול'.trim(), title: 'בטיפול' },
-    { id: 'סגור'.trim(), title: 'סגורים' }
+    { id: 'פניות חדשות', title: settings.kanbanLabels['פניות חדשות'] },
+    { id: 'בטיפול',      title: settings.kanbanLabels['בטיפול'] },
+    { id: 'סגור',        title: settings.kanbanLabels['סגור'] },
   ];
 
   const getInquiriesForColumn = (statusId) => {
@@ -40,47 +42,73 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
     }
   };
 
+  const deletionTimers = useRef({});
+
   const handleDeleteRecord = (recordId, recordData) => {
-    // Optimistically remove from UI immediately
-    setInquiries(prev => prev.filter(inq => inq.id !== recordId));
+    // Store original index so undo restores the card to its exact position
+    let originalIndex;
+    setInquiries(prev => {
+      originalIndex = prev.findIndex(inq => inq.id === recordId);
+      return prev.filter(inq => inq.id !== recordId);
+    });
 
-    let undone = false;
+    let isUndone = false;
 
-    // Show undo toast for 5 seconds
+    // Show undo toast
     toast(
       (t) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span>הלקוח נמחק</span>
+        <div className="flex items-center gap-4" dir="rtl">
+          <div className="flex flex-col">
+            <span className="font-bold text-sm text-white">הלקוח הועבר לסל המיחזור</span>
+            <span className="text-xs text-white/70">ניתן לבטל את הפעולה ב-5 שניות הקרובות</span>
+          </div>
           <button
             onClick={() => {
-              undone = true;
-              setInquiries(prev => [...prev, recordData]);
+              isUndone = true;
               toast.dismiss(t.id);
-              toast.success('המחיקה בוטלה ✅');
+              if (deletionTimers.current[recordId]) {
+                clearTimeout(deletionTimers.current[recordId]);
+                delete deletionTimers.current[recordId];
+              }
+              setInquiries(prev => {
+                const next = [...prev];
+                const insertAt = originalIndex != null ? Math.min(originalIndex, next.length) : next.length;
+                next.splice(insertAt, 0, recordData);
+                return next;
+              });
+              toast.success('המחיקה בוטלה בהצלחה');
             }}
-            style={{
-              background: '#C5A880',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '4px 12px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
+            className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl font-bold transition-all border border-white/20 text-sm whitespace-nowrap"
           >
-            בטל
+            בטל מחיקה
           </button>
         </div>
       ),
-      { duration: 5000 }
+      { 
+        duration: 5000,
+        position: 'bottom-center',
+        style: { 
+          background: '#1a1a1a', 
+          color: '#fff', 
+          borderRadius: '20px', 
+          padding: '16px 20px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          minWidth: '350px'
+        }
+      }
     );
 
-    // Perform actual deletion after 5 seconds if not undone
-    setTimeout(async () => {
-      if (!undone) {
-        await deleteAirtableRecord(recordId);
+    // Perform actual deletion
+    deletionTimers.current[recordId] = setTimeout(async () => {
+      if (!isUndone) {
+        const success = await deleteAirtableRecord(recordId);
+        if (!success) {
+          toast.error('שגיאה במחיקת הלקוח מהשרת');
+          setInquiries(prev => [...prev, recordData]);
+        }
       }
+      delete deletionTimers.current[recordId];
     }, 5000);
   };
 

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Calendar, MessageSquare, Phone, Mail, User, Info, Briefcase } from 'lucide-react';
 import { createAirtableRecord, isValidIsraeliPhone } from '../airtable';
+import { useSettings } from '../hooks/useSettings';
 
 const JoinPage = () => {
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     Name: '',
     Company: '',
@@ -13,17 +15,10 @@ const JoinPage = () => {
     ['Event Date']: '',
     Notes: ''
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  const eventTypes = [
-    'יום גיבוש',
-    'נופש חברה',
-    'הרמת כוסית',
-    'כנס',
-    'אחר'
-  ];
+  const [honeypot, setHoneypot] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,7 +28,17 @@ const JoinPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.Phone && !isValidIsraeliPhone(formData.Phone)) {
+    // Honeypot: bots fill hidden fields, humans don't
+    if (honeypot) {
+      setIsSuccess(true); // Fake success to not reveal detection
+      return;
+    }
+
+    if (!formData.Phone) {
+      alert('יש להזין מספר טלפון.');
+      return;
+    }
+    if (!isValidIsraeliPhone(formData.Phone)) {
       alert('מספר הטלפון אינו תקין. אנא הזן מספר ישראלי תקני (05X-XXXXXXX).');
       return;
     }
@@ -126,6 +131,17 @@ const JoinPage = () => {
                 </motion.div>
 
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Honeypot: hidden from real users, bots fill it automatically */}
+                  <div style={{ display: 'none' }} aria-hidden="true">
+                    <input
+                      type="text"
+                      name="website"
+                      value={honeypot}
+                      onChange={e => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
                   
                   {/* Name field */}
                   <motion.div variants={itemVariants} className="space-y-1.5 md:col-span-1">
@@ -228,7 +244,7 @@ const JoinPage = () => {
                         className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#333333] focus:ring-2 focus:ring-[#2C8A99]/40 focus:border-[#2C8A99] outline-none transition-all appearance-none"
                       >
                         <option value="" disabled>בחרו סוג אירוע...</option>
-                        {eventTypes.map(type => (
+                        {settings.eventTypes.map(type => (
                           <option key={type} value={type}>{type}</option>
                         ))}
                       </select>

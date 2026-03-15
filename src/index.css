@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/* Enable class-based dark mode */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --color-background: #FDFBF7;
   --color-foreground: #333333;
@@ -15,6 +18,16 @@
 
   --radius-lg: 16px;
   --radius-2xl: 24px;
+}
+
+/* Dark mode CSS variable overrides */
+html.dark {
+  --color-background: #0f0e0d;
+  --color-foreground: #e8e4df;
+  --color-card: #1a1917;
+  --color-card-foreground: #e8e4df;
+  --color-border: #2d2b28;
+  --color-gold-glow: rgba(197, 168, 128, 0.08);
 }
 
 @layer base {
@@ -52,6 +65,16 @@
     z-index: 50;
   }
 
+  html.dark .glass-header {
+    background: linear-gradient(
+      135deg,
+      rgba(26, 25, 23, 0.95) 0%,
+      rgba(18, 17, 15, 0.92) 100%
+    );
+    border-bottom-color: rgba(197, 168, 128, 0.08);
+    box-shadow: 0 1px 0 rgba(197, 168, 128, 0.05), 0 4px 24px rgba(0,0,0,0.3);
+  }
+
   /* Premium card glow on hover */
   .card-premium {
     transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
@@ -84,6 +107,21 @@
     animation: gold-shimmer 4s linear infinite;
   }
 
+  html.dark .stat-number {
+    background: linear-gradient(
+      90deg,
+      #e8e4df 0%,
+      #e8e4df 30%,
+      #C5A880 50%,
+      #e8e4df 70%,
+      #e8e4df 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
   /* Skeleton shimmer */
   @keyframes shimmer {
     0% { background-position: -400px 0; }
@@ -99,6 +137,16 @@
     );
     background-size: 800px 100%;
     animation: shimmer 1.8s ease-in-out infinite;
+  }
+
+  html.dark .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      #2a2826 25%,
+      #332f2c 50%,
+      #2a2826 75%
+    );
+    background-size: 800px 100%;
   }
 
   /* Grain texture overlay */
@@ -118,5 +166,12 @@
       radial-gradient(ellipse 60% 40% at 80% 20%, rgba(197, 168, 128, 0.06) 0%, transparent 60%),
       radial-gradient(ellipse 40% 30% at 20% 80%, rgba(155, 172, 164, 0.05) 0%, transparent 60%),
       #FDFBF7;
+  }
+
+  html.dark .ambient-bg {
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(197, 168, 128, 0.03) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 20% 80%, rgba(155, 172, 164, 0.02) 0%, transparent 60%),
+      #0f0e0d;
   }
 }

@@ -22,7 +22,9 @@ const ImportPage = () => {
     Email: '',
     EventType: '',
     EventDate: '', 
-    Notes: ''
+    Notes: '',
+    Budget: '',
+    Participants: ''
   });
 
   const [importState, setImportState] = useState('idle'); // idle | mapping | importing | complete
@@ -81,7 +83,9 @@ const ImportPage = () => {
             Email: findMatch(['Email', 'Mail', 'מייל', 'אימייל']),
             EventType: findMatch(['Type', 'Event Type', 'סוג', 'סוג אירוע']),
             EventDate: findMatch(['Date', 'Event Date', 'תאריך', 'תאריך אירוע']),
-            Notes: findMatch(['Notes', 'Comments', 'הערות', 'מידע נוסף'])
+            Notes: findMatch(['Notes', 'Comments', 'הערות', 'מידע נוסף']),
+            Budget: findMatch(['Budget', 'Price', 'תקציב', 'מחיר', 'עלות']),
+            Participants: findMatch(['Participants', 'Count', 'משתתפים', 'כמות', 'מספר'])
           };
           setColumnMapping(guessedMapping);
           setImportState('mapping');
@@ -154,6 +158,8 @@ const ImportPage = () => {
           'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') : '',
           'Event Date': cleanDate || '', 
           Notes: columnMapping.Notes ? String(row[columnMapping.Notes] || '') : '',
+          Budget: columnMapping.Budget && row[columnMapping.Budget] ? Number(row[columnMapping.Budget].toString().replace(/\D/g, '')) : null,
+          Participants: columnMapping.Participants && row[columnMapping.Participants] ? Number(row[columnMapping.Participants].toString().replace(/\D/g, '')) : null,
           Status: 'פניות חדשות' // Forced status as per user request
         };
       });
@@ -352,6 +358,30 @@ const ImportPage = () => {
                       <select 
                         value={columnMapping.Notes} 
                         onChange={(e) => setColumnMapping({...columnMapping, Notes: e.target.value})}
+                        className="w-full border border-[#EAE3D9] rounded-lg p-2.5 text-sm outline-none focus:border-[#C5A880]"
+                      >
+                        <option value="">-- ללא שיוך --</option>
+                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                    {/* Budget Mapping */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-2">תקציב (אופציונלי)</label>
+                      <select 
+                        value={columnMapping.Budget} 
+                        onChange={(e) => setColumnMapping({...columnMapping, Budget: e.target.value})}
+                        className="w-full border border-[#EAE3D9] rounded-lg p-2.5 text-sm outline-none focus:border-[#C5A880]"
+                      >
+                        <option value="">-- ללא שיוך --</option>
+                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                    {/* Participants Mapping */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-2">משתתפים (אופציונלי)</label>
+                      <select 
+                        value={columnMapping.Participants} 
+                        onChange={(e) => setColumnMapping({...columnMapping, Participants: e.target.value})}
                         className="w-full border border-[#EAE3D9] rounded-lg p-2.5 text-sm outline-none focus:border-[#C5A880]"
                       >
                         <option value="">-- ללא שיוך --</option>

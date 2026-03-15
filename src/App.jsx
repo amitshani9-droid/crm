@@ -1,18 +1,21 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout';
 import Dashboard from './components/Dashboard';
 import JoinPage from './components/JoinPage';
 import ImportPage from './components/ImportPage';
+import SettingsPage from './components/SettingsPage';
 
 function App() {
   return (
     <BrowserRouter>
-      <div className="App">
-        <Routes>
+      <Routes>
+        <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/join" element={<JoinPage />} />
           <Route path="/import" element={<ImportPage />} />
-        </Routes>
-      </div>
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

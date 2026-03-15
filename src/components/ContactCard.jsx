@@ -1,10 +1,15 @@
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon, Trash2 } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon, Trash2, Bell, BellOff, X } from 'lucide-react';
 import { updateAirtableRecord, uploadFileToRecord, isValidIsraeliPhone } from '../airtable';
 import toast from 'react-hot-toast';
+import { useSettings } from '../hooks/useSettings';
 
 const ContactCard = ({ data, onDelete }) => {
+  const { settings } = useSettings();
+  const PRIORITY_CONFIG = Object.fromEntries(
+    settings.priorities.map(p => [p.id, { bg: p.bg, text: p.text, border: p.border, emoji: p.emoji }])
+  );
   const [localData, setLocalData] = useState(data);
   const { 
     id,
@@ -14,10 +19,23 @@ const ContactCard = ({ data, onDelete }) => {
     ['Event Type']: EventType, 
     ['Event Date']: EventDate,
     Notes,
-    Attachments = []
+    Attachments = [],
+    Budget,
+    Participants,
+    createdTime,
+    Status
   } = localData || {};
 
-  const Company = localData?.Company;
+  const Company  = localData?.Company;
+  const Priority = localData?.Priority;
+
+  // Calculate "Waiting" status: > 7 days in "בטיפול" 
+  const isWaiting = useMemo(() => {
+    if (Status !== 'בטיפול' || !createdTime) return false;
+    const created = new Date(createdTime);
+    const diffDays = (new Date() - created) / (1000 * 60 * 60 * 24);
+    return diffDays > 7;
+  }, [Status, createdTime]);
 
   const [localAttachments, setLocalAttachments] = useState(Attachments);
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -31,7 +49,10 @@ const ContactCard = ({ data, onDelete }) => {
     Phone: Phone || '',
     Email: Email || '',
     'Event Type': EventType || '',
-    'Event Date': localData?._rawDate || ''
+    'Event Date': localData?._rawDate || '',
+    Priority: localData?.Priority || '',
+    Budget: Budget || '',
+    Participants: Participants || ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -39,6 +60,36 @@ const ContactCard = ({ data, onDelete }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Reminder state (persisted in localStorage)
+  const REMINDER_KEY = `crm_reminder_${id}`;
+  const [reminder, setReminder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(REMINDER_KEY)) || null; } catch { return null; }
+  });
+  const [showReminderPanel, setShowReminderPanel] = useState(false);
+  const [reminderDraft, setReminderDraft] = useState({ text: reminder?.text || '', date: reminder?.date || '' });
+
+  const saveReminder = (e) => {
+    e.stopPropagation();
+    if (!reminderDraft.text.trim()) {
+      localStorage.removeItem(REMINDER_KEY);
+      setReminder(null);
+    } else {
+      const r = { text: reminderDraft.text.trim(), date: reminderDraft.date };
+      localStorage.setItem(REMINDER_KEY, JSON.stringify(r));
+      setReminder(r);
+    }
+    setShowReminderPanel(false);
+    toast.success(reminderDraft.text.trim() ? 'תזכורת נשמרה' : 'תזכורת נמחקה');
+  };
+
+  const clearReminder = (e) => {
+    e.stopPropagation();
+    localStorage.removeItem(REMINDER_KEY);
+    setReminder(null);
+    setReminderDraft({ text: '', date: '' });
+    toast.success('תזכורת נמחקה');
+  };
 
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -63,12 +114,20 @@ const ContactCard = ({ data, onDelete }) => {
       const digits = Phone.replace(/\D/g, '');
       const waNumber = digits.startsWith('0') ? `972${digits.substring(1)}` : `972${digits}`;
       
-      const message = encodeURIComponent(`היי ${Name}, זאת טל שני הפקת אירועים. מוזמנים ליצור קשר בכל שאלה! 💫`);
-      
-      const waLink = `https://wa.me/${waNumber}?text=${message}`;
-      window.open(waLink, '_blank');
+      const defaultMessage = `היי ${Name || ''}, זאת טל שני הפקת אירועים. מוזמנים ליצור קשר בכל שאלה! 💫`;
+      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(defaultMessage)}`, '_blank');
     } else {
       toast.error('חסר מספר טלפון או שם');
+    }
+  };
+
+  const handleEmail = (e) => {
+    e.stopPropagation();
+    if (Email) {
+      const subject = encodeURIComponent(`טל שני הפקת אירועים — ${Name || 'לקוח'}`);
+      window.open(`mailto:${Email}?subject=${subject}`, '_blank');
+    } else {
+      toast.error('חסר כתובת דוא"ל');
     }
   };
 
@@ -129,7 +188,10 @@ const ContactCard = ({ data, onDelete }) => {
       Phone: editForm.Phone,
       Email: editForm.Email,
       'Event Type': editForm['Event Type'],
-      'Event Date': editForm['Event Date']
+      'Event Date': editForm['Event Date'],
+      Priority: editForm.Priority,
+      Budget: editForm.Budget,
+      Participants: editForm.Participants
     };
 
     const success = await updateAirtableRecord(id, payload);
@@ -202,6 +264,8 @@ const ContactCard = ({ data, onDelete }) => {
     setShowTemplates(false);
   };
 
+  const priorityCfg = Priority ? PRIORITY_CONFIG[Priority] : null;
+
   return (
     <motion.div
       layout
@@ -212,17 +276,23 @@ const ContactCard = ({ data, onDelete }) => {
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       draggable 
       onDragStart={handleDragStart}
-      className="bg-white p-5 rounded-[16px] border border-[#EAE3D9] shadow-[0_4px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_20px_rgba(197,168,128,0.1)] hover:-translate-y-[2px] hover:border-[#C5A880]/40 transition-all duration-300 flex flex-col gap-3 cursor-grab active:cursor-grabbing"
+      className={`bg-white dark:bg-[#1a1917] p-5 rounded-[16px] border ${isWaiting ? 'border-amber-400 border-2 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-[#EAE3D9] dark:border-[#2d2b28]'} shadow-[0_4px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_20px_rgba(197,168,128,0.1)] hover:-translate-y-[2px] transition-all duration-300 flex flex-col gap-3 cursor-grab active:cursor-grabbing relative overflow-hidden`}
+      style={priorityCfg ? { borderColor: priorityCfg.border } : undefined}
     >
+      {isWaiting && (
+        <div className="absolute top-0 right-0 bg-amber-400 text-amber-900 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20 shadow-sm">
+          ⏳ ממתין זמן
+        </div>
+      )}
       {isEditingCard ? (
-        <div className="flex flex-col gap-3 p-3 bg-[#FDFBF7] rounded-xl border border-[#C5A880]/30 shadow-inner mb-2 cursor-default">
+        <div className="flex flex-col gap-3 p-3 bg-[#FDFBF7] dark:bg-[#141311] rounded-xl border border-[#C5A880]/30 shadow-inner mb-2 cursor-default">
           <div>
              <label className="block text-xs font-semibold text-[#666666] mb-1">שם חברה (אופציונלי)</label>
-             <input type="text" value={editForm.Company} onChange={e => setEditForm({...editForm, Company: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="שם חברה / ארגון" onClick={e => e.stopPropagation()} />
+             <input type="text" value={editForm.Company} onChange={e => setEditForm({...editForm, Company: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="שם חברה / ארגון" onClick={e => e.stopPropagation()} />
           </div>
           <div>
              <label className="block text-xs font-semibold text-[#666666] mb-1">שם איש קשר (חובה)</label>
-             <input type="text" value={editForm.Name} onChange={e => setEditForm({...editForm, Name: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="איש קשר" onClick={e => e.stopPropagation()} />
+             <input type="text" value={editForm.Name} onChange={e => setEditForm({...editForm, Name: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="איש קשר" onClick={e => e.stopPropagation()} />
           </div>
           <div>
              <label className="block text-xs font-semibold text-[#666666] mb-1">טלפון</label>
@@ -235,19 +305,32 @@ const ContactCard = ({ data, onDelete }) => {
           <div className="flex gap-2">
             <div className="flex-1">
                <label className="block text-xs font-semibold text-[#666666] mb-1">סוג אירוע</label>
-               <select value={editForm['Event Type']} onChange={e => setEditForm({...editForm, 'Event Type': e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none bg-white transition-colors" onClick={e => e.stopPropagation()}>
+               <select value={editForm['Event Type']} onChange={e => setEditForm({...editForm, 'Event Type': e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] rounded-lg focus:border-[#C5A880] outline-none bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] transition-colors" onClick={e => e.stopPropagation()}>
                  <option value="">- ללא שיוך -</option>
-                 <option value="יום גיבוש">יום גיבוש</option>
-                 <option value="נופש חברה">נופש חברה</option>
-                 <option value="הרמת כוסית">הרמת כוסית</option>
-                 <option value="כנס">כנס</option>
-                 <option value="אחר">אחר</option>
+                 {settings.eventTypes.map(t => <option key={t} value={t}>{t}</option>)}
                </select>
             </div>
             <div className="flex-1">
                <label className="block text-xs font-semibold text-[#666666] mb-1">תאריך</label>
-               <input type="date" value={editForm['Event Date']} onChange={e => setEditForm({...editForm, 'Event Date': e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none transition-colors" onClick={e => e.stopPropagation()} />
+               <input type="date" value={editForm['Event Date']} onChange={e => setEditForm({...editForm, 'Event Date': e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none transition-colors" onClick={e => e.stopPropagation()} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+               <label className="block text-xs font-semibold text-[#666666] mb-1">תקציב (₪)</label>
+               <input type="number" value={editForm.Budget} onChange={e => setEditForm({...editForm, Budget: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="0" onClick={e => e.stopPropagation()} />
+            </div>
+            <div>
+               <label className="block text-xs font-semibold text-[#666666] mb-1">משתתפים</label>
+               <input type="number" value={editForm.Participants} onChange={e => setEditForm({...editForm, Participants: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="0" onClick={e => e.stopPropagation()} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#666666] mb-1">עדיפות</label>
+            <select value={editForm.Priority} onChange={e => setEditForm({...editForm, Priority: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] rounded-lg focus:border-[#C5A880] outline-none bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] transition-colors" onClick={e => e.stopPropagation()}>
+              <option value="">- ללא עדיפות -</option>
+              {settings.priorities.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.label}</option>)}
+            </select>
           </div>
           <div className="mt-4 flex gap-2">
             <button disabled={isSaving || isDeleting} onClick={handleSaveCard} className="flex-1 bg-[#C5A880] text-white py-2 rounded-lg font-bold shadow-md hover:bg-[#b09673] flex items-center justify-center gap-1 active:scale-95 transition-all"><Check size={18}/> שמור שינויים</button>
@@ -259,37 +342,74 @@ const ContactCard = ({ data, onDelete }) => {
         </div>
       ) : (
         <>
+          {/* Priority badge */}
+          {priorityCfg && (
+            <div className="flex justify-end -mb-1">
+              <span
+                className="text-xs font-bold px-2.5 py-1 rounded-full"
+                style={{ background: priorityCfg.bg, color: priorityCfg.text, border: `1px solid ${priorityCfg.border}` }}
+              >
+                {priorityCfg.emoji} {Priority}
+              </span>
+            </div>
+          )}
+
           <div className="flex justify-between items-start gap-3">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#EAE3D9] to-[#C5A880] rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">
                 {getInitials(Company ? Company : Name)}
               </div>
               <div className="flex flex-col flex-1">
-                <h3 className="text-xl font-bold text-[#333333] leading-tight">
+                <h3 className="text-xl font-bold text-[#333333] dark:text-[#e8e4df] leading-tight">
                    {Company || Name || 'ללא שם'}
                 </h3>
                 {Company && Name && (
                    <span className="text-base text-[#666666] leading-tight mt-1">{Name}</span>
                 )}
-                {/* Event Type Soft Tag directly underneath */}
-                {EventType && (
-                  <div className="mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {EventType && (
                     <span className="bg-[#9BACA4]/15 text-[#6c8579] text-sm px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap">
                       {EventType}
                     </span>
-                  </div>
-                )}
+                  )}
+                  {Budget && (
+                    <span className="bg-[#C5A880]/15 text-[#C5A880] text-sm px-3 py-1.5 rounded-lg font-bold whitespace-nowrap">
+                      ₪{Number(Budget).toLocaleString()}
+                    </span>
+                  )}
+                  {Participants && (
+                    <span className="bg-[#333333]/10 text-[#333333] text-sm px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap">
+                      {Participants} משתתפים
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-1 ml-[-0.5rem] mt-[-0.5rem]">
-              <button 
+              <button
                 disabled={isDeleting}
                 onClick={handleDelete}
                 className="flex-shrink-0 text-[#9BACA4] hover:text-red-500 transition-colors p-2 bg-[#FDFBF7] hover:bg-white rounded-full border border-transparent hover:border-red-100 shadow-sm"
               >
                 <Trash2 size={16} />
               </button>
-              <button 
+              {Email && (
+                <button
+                  onClick={handleEmail}
+                  className="flex-shrink-0 text-[#9BACA4] hover:text-[#2C8A99] transition-colors p-2 bg-[#FDFBF7] hover:bg-white rounded-full border border-transparent hover:border-[#2C8A99]/20 shadow-sm"
+                  title={`שלח מייל ל-${Email}`}
+                >
+                  <Mail size={16} />
+                </button>
+              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); setReminderDraft({ text: reminder?.text || '', date: reminder?.date || '' }); setShowReminderPanel(p => !p); }}
+                className={`flex-shrink-0 transition-colors p-2 rounded-full border shadow-sm ${reminder ? 'text-amber-500 bg-amber-50 border-amber-200 hover:bg-amber-100' : 'text-[#9BACA4] hover:text-amber-500 bg-[#FDFBF7] hover:bg-white border-transparent hover:border-amber-100'}`}
+                title="תזכורת"
+              >
+                <Bell size={16} />
+              </button>
+              <button
                 onClick={(e) => { e.stopPropagation(); setIsEditingCard(true); }}
                 className="flex-shrink-0 text-[#9BACA4] hover:text-[#C5A880] transition-colors p-2 bg-[#FDFBF7] hover:bg-white rounded-full border border-transparent hover:border-[#EAE3D9] shadow-sm"
               >
@@ -337,7 +457,7 @@ const ContactCard = ({ data, onDelete }) => {
         
         {/* Render Conversation History */}
         {Notes && (
-          <div className="text-base text-[#666666] bg-[#FDFBF7] p-4 rounded-xl border border-[#EAE3D9] shadow-inner max-h-[120px] overflow-y-auto hide-scrollbar whitespace-pre-wrap leading-relaxed">
+          <div className="text-base text-[#666666] dark:text-[#9BACA4] bg-[#FDFBF7] dark:bg-[#141311] p-4 rounded-xl border border-[#EAE3D9] dark:border-[#2d2b28] shadow-inner max-h-[120px] overflow-y-auto hide-scrollbar whitespace-pre-wrap leading-relaxed">
             {Notes}
           </div>
         )}
@@ -349,7 +469,7 @@ const ContactCard = ({ data, onDelete }) => {
               autoFocus
               value={editedNote}
               onChange={(e) => setEditedNote(e.target.value)}
-              className="w-full bg-white text-[#333333] text-base p-4 rounded-xl border-2 border-[#C5A880]/50 focus:border-[#C5A880] outline-none resize-none min-h-[80px] shadow-sm transition-colors"
+              className="w-full bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] text-base p-4 rounded-xl border-2 border-[#C5A880]/50 focus:border-[#C5A880] outline-none resize-none min-h-[80px] shadow-sm transition-colors"
               placeholder="הקלד כאן הערה או סטטוס חדש..."
               onClick={(e) => e.stopPropagation()}
             />
@@ -437,9 +557,68 @@ const ContactCard = ({ data, onDelete }) => {
         )}
       </div>
 
+      {/* Active reminder banner */}
+      <AnimatePresence>
+        {reminder && !showReminderPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium"
+          >
+            <Bell size={13} className="text-amber-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold truncate">{reminder.text}</p>
+              {reminder.date && <p className="text-amber-600 mt-0.5">{new Date(reminder.date).toLocaleDateString('he-IL')}</p>}
+            </div>
+            <button onClick={clearReminder} className="text-amber-400 hover:text-amber-700 flex-shrink-0 p-0.5">
+              <X size={12} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reminder panel */}
+      <AnimatePresence>
+        {showReminderPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5"><Bell size={12} /> הוסיפי תזכורת</p>
+            <input
+              type="text"
+              value={reminderDraft.text}
+              onChange={(e) => setReminderDraft(p => ({ ...p, text: e.target.value }))}
+              placeholder="מה לזכור? (לדוגמה: לחזור אחרי שבועיים)"
+              className="w-full text-sm p-2 rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400 transition-colors"
+            />
+            <input
+              type="date"
+              value={reminderDraft.date}
+              onChange={(e) => setReminderDraft(p => ({ ...p, date: e.target.value }))}
+              className="w-full text-sm p-2 rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400 transition-colors"
+            />
+            <div className="flex gap-2">
+              <button onClick={saveReminder} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold py-2 rounded-lg transition-colors">שמור</button>
+              {reminder && (
+                <button onClick={clearReminder} className="px-3 bg-white border border-amber-200 text-amber-600 text-sm font-bold py-2 rounded-lg hover:bg-amber-50 transition-colors flex items-center gap-1">
+                  <BellOff size={13} /> מחק
+                </button>
+              )}
+              <button onClick={(e) => { e.stopPropagation(); setShowReminderPanel(false); }} className="px-3 bg-white border border-[#EAE3D9] text-[#9BACA4] text-sm font-bold py-2 rounded-lg">ביטול</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="mt-4 pt-4 border-t border-[#EAE3D9]/60 relative">
         {showTemplates && (
-          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-[#EAE3D9] rounded-xl shadow-lg z-10 overflow-hidden">
+          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white dark:bg-[#1e1c1a] border border-[#EAE3D9] dark:border-[#2d2b28] rounded-xl shadow-lg z-10 overflow-hidden">
             {whatsappTemplates.map((t, i) => (
               <button
                 key={i}

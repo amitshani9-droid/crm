@@ -1,122 +1,65 @@
 // src/airtable.js
-// Utility to fetch data from Airtable using the official SDK
-import Airtable from 'airtable';
-
-const AIRTABLE_PAT = import.meta.env.VITE_AIRTABLE_PAT;
-const BASE_ID = import.meta.env.VITE_AIRTABLE_BASE_ID;
-const TABLE_NAME = 'Table 1'; // Strictly set to Table 1 to match Airtable setup
-
-let base;
-if (AIRTABLE_PAT) {
-  base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
-}
+// Utility to fetch data from Airtable via our serverless proxy
 
 /**
  * Robustly sanitizes phone numbers for Israeli local 10-digit format.
- * Handles decimals (e.g. .00 from CSV), prefixes (972), and missing leading 0s.
  */
 export function sanitizePhone(phone) {
   if (!phone) return '';
-  
-  // 1. Convert to string and split by . to remove anything after decimal point
   let str = String(phone).split('.')[0];
-  
-  // 2. Strip all non-digit characters
   let digits = str.replace(/\D/g, '');
-  
   if (!digits) return '';
-
-  // 3. Handle international/local prefixes
-  // Case: Starts with 972... -> replace with 0
   if (digits.startsWith('972')) {
     digits = '0' + digits.substring(3);
-  }
-  
-  // Case: Starts with 5... (missing leading 0) -> prepend 0
-  else if (digits.startsWith('5')) {
+  } else if (digits.startsWith('5')) {
     digits = '0' + digits;
   }
-  
-  // 4. Return standard 10-digit local format if valid length
-  // (Standard Israeli mobile: 05X-XXXXXXX)
   return digits;
 }
 
 /**
- * Validates an Israeli phone number (after sanitization).
- * Accepts mobile (05X) and landline (0X) formats.
+ * Validates an Israeli phone number.
  */
 export function isValidIsraeliPhone(phone) {
   if (!phone) return false;
   const sanitized = sanitizePhone(phone);
-  return /^0[0-9]{8,9}$/.test(sanitized);
+  // Israeli mobile: 05X + 7 digits. Landlines: 02/03/04/08/09 + 7 digits.
+  return /^0(5[0-9]|[2-4]|[8-9])\d{7}$/.test(sanitized);
 }
 
 /**
- * Sanitizes fields before sending to Airtable.
- * Removes empty strings, nulls, and undefined values to prevent 422 errors.
+ * Sanitizes fields before sending to the proxy.
  */
 function sanitizeFields(fields) {
   const sanitized = {};
-  
-  // Basic Fields
   if (fields.Name) sanitized.Name = String(fields.Name);
   if (fields.Status) sanitized.Status = String(fields.Status).trim();
   if (fields.Phone) sanitized.Phone = sanitizePhone(fields.Phone);
   
-  // Optional Fields - only add if they have a real value
-  const optionalKeys = [
-    'Company', 
-    'Email', 
-    'Event Type', 
-    'Event Date', 
-    'Notes'
-  ];
-
+  const optionalKeys = ['Company', 'Email', 'Event Type', 'Event Date', 'Notes', 'Budget', 'Participants', 'Priority'];
   optionalKeys.forEach(key => {
     if (fields[key] !== undefined && fields[key] !== null && String(fields[key]).trim() !== '') {
       sanitized[key] = fields[key];
     }
   });
 
-  // Attachments - only if array and non-empty
-  if (fields.Attachments && Array.isArray(fields.Attachments) && fields.Attachments.length > 0) {
+  if (fields.Attachments !== undefined && Array.isArray(fields.Attachments)) {
     sanitized.Attachments = fields.Attachments;
   }
-
   return sanitized;
 }
 
 export async function fetchAirtableRecords() {
-  if (!base) {
-    console.warn("Airtable PAT missing. Make sure VITE_AIRTABLE_PAT is set in your .env file. Returning dummy data for preview.");
-    return [
-      { id: '1', Status: 'פניות חדשות', Name: 'דני כהן', Phone: '0541234567', Email: 'dani@example.com', 'Event Type': 'חתונת שישי', 'Event Date': '15/05/2026', _rawDate: '2026-05-15', Notes: 'פניה מהאתר, מחפש מקום פתוח', Attachments: [] },
-      { id: '2', Status: 'פניות חדשות', Name: 'מיכל לוי', Phone: '0529876543', Email: 'michal@example.com', 'Event Type': 'בר מצווה', _rawDate: null, Attachments: [] },
-      { id: '3', Status: 'בטיפול', Name: 'רועי ונועה', Phone: '0501112233', Email: 'rn@example.com', 'Event Type': 'חתונה', Notes: 'פגישת טעימות בשבוע הבא', _rawDate: null, Attachments: [] },
-      { id: '4', Status: 'סגור', Name: 'משפחת ישראלי', Phone: '0534445566', Email: 'israeli@example.com', 'Event Type': 'בת מצווה', Notes: 'לוודא הגעת ספקים ב-16:00', _rawDate: null, Attachments: [] }
-    ];
-  }
-
   try {
-    const records = await base(TABLE_NAME).select().all();
-    
-    // DEBUG: Log one sample record to verify field names and data types accurately
-    if (records.length > 0) {
-      console.log("Sample Airtable Record Fields:", JSON.stringify(records[0].fields, null, 2));
-    }
+    const response = await fetch('/api/airtable');
+    if (!response.ok) throw new Error('Failed to fetch records');
+    const records = await response.json();
 
     return records.map(record => {
-      // CRITICAL FIX: Prioritize Airtable's internal record.id for all updates to prevent 422 errors.
-      // We store it as 'id' so components can pass it back to updateAirtableRecord.
-      const recordId = record.id;
-      
-      // Hebrew Date Parsing
-      let parsedDate = record.fields['Event Date'];
+      let parsedDate = record['Event Date'];
       if (parsedDate) {
         const d = new Date(parsedDate);
         if (!isNaN(d.getTime())) {
-          // Format as DD/MM/YYYY
           parsedDate = d.toLocaleDateString('he-IL', {
             day: '2-digit',
             month: '2-digit',
@@ -126,208 +69,108 @@ export async function fetchAirtableRecords() {
       }
 
       return {
-        id: recordId,
-        ...record.fields,
-        Company: record.fields.Company || '',
-        ['Event Date']: parsedDate, // Override with parsed date
-        _rawDate: record.fields['Event Date'], // Keep raw for sorting/math if needed
-        Attachments: record.fields.Attachments || [] // Ensure it's an array
+        ...record,
+        Company: record.Company || '',
+        ['Event Date']: parsedDate,
+        _rawDate: record['Event Date'],
+        Attachments: record.Attachments || []
       };
     });
   } catch (error) {
-    console.error("Error fetching Airtable records:", error);
+    console.error("Error fetching records:", error);
+    // Return dummy data in dev if proxy is not running
+    if (import.meta.env.DEV) {
+      console.warn("Proxy might not be running. Returning dummy data for development.");
+      return [
+        { id: '1', Status: 'פניות חדשות', Name: 'דני כהן', Phone: '0541234567', Email: 'dani@example.com', 'Event Type': 'חתונת שישי', 'Event Date': '15/05/2026', _rawDate: '2026-05-15', Notes: 'פניה מהאתר', Attachments: [] },
+        { id: '2', Status: 'בטיפול', Name: 'מיכל לוי', Phone: '0529876543', Email: 'michal@example.com', 'Event Type': 'בר מצווה', _rawDate: null, Attachments: [] }
+      ];
+    }
     return [];
   }
 }
 
 export async function updateAirtableRecord(recordId, fields) {
-  if (!base) {
-    console.warn("Using dummy data, skipping Airtable SDK update hook.");
-    return true; // Simulate success
-  }
-
   try {
     const sanitizedFields = sanitizeFields(fields);
-    console.log(`Updating Record ${recordId} with fields:`, sanitizedFields);
-    
-    await base(TABLE_NAME).update([
-      {
-        id: recordId,
-        fields: sanitizedFields
-      }
-    ]);
-    return true;
+    const response = await fetch('/api/airtable', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: recordId, fields: sanitizedFields })
+    });
+    return response.ok;
   } catch (error) {
-    console.error("=== AIRTABLE UPDATE ERROR ===");
-    console.error("Record ID:", recordId);
-    console.error("Fields:", fields);
-    console.error("Error Message:", error.message);
-    if (error.error) console.error("Airtable Error Code:", error.error);
-    if (error.statusCode) console.error("Status Code:", error.statusCode);
-    
-    // Attempt to log more details if available in the error object
-    try {
-      if (error.body) console.error("Error Body:", JSON.stringify(error.body, null, 2));
-    } catch (e) {}
-    
+    console.error("Error updating record:", error);
     return false;
   }
 }
 
-export async function uploadFileToRecord(recordId, file, existingAttachments = []) {
-  if (!base) {
-    console.warn("Using dummy data, skipping Airtable SDK upload hook.");
-    return null;
-  }
-
-  try {
-    // 1. Upload to permanent hosting (Cloudinary) to get a secure public URL
-    const formData = new FormData();
-    formData.append('file', file);
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
-    if (!cloudName || !uploadPreset) {
-      throw new Error('Cloudinary env vars missing: VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET must be set');
-    }
-
-    formData.append('upload_preset', uploadPreset); 
-    
-    const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-      method: 'POST',
-      body: formData
-    });
-    
-    const uploadData = await uploadRes.json();
-    
-    if (!uploadData.secure_url) {
-      throw new Error(`Failed to upload to Cloudinary: ${uploadData.error?.message || 'Unknown error'}`);
-    }
-
-    const publicUrl = uploadData.secure_url;
-
-    // 2. Append to Airtable Attachments payload
-    const newAttachment = {
-      url: publicUrl,
-      filename: file.name
-    };
-
-    const updatedAttachments = [...existingAttachments, newAttachment];
-
-    // 3. Update Airtable record natively with the public URL
-    await base(TABLE_NAME).update([
-      {
-        id: recordId,
-        fields: {
-          Attachments: updatedAttachments
-        }
-      }
-    ]);
-
-    return newAttachment;
-  } catch (error) {
-    console.error("Error uploading file to Cloudinary/Airtable:", error);
-    return null;
-  }
-}
-
-/**
- * Bulk imports records into Airtable, handling mapping and deduplication.
- * @param {Array} records - Array of cleaned record objects ready for Airtable.
- * @returns {Object} { success: boolean, count: number }
- */
-export async function importRecordsBatch(records) {
-  if (!base) {
-    console.warn("Using dummy data, skipping Airtable bulk import.");
-    return { success: true, count: records.length };
-  }
-
-  try {
-    // 1. Fetch current records for Deduplication check (Phone number)
-    const existingRecords = await fetchAirtableRecords();
-    const existingPhoneMap = new Map(existingRecords.map(r => [r.Phone, r.id]));
-
-    // 2. Separate into "To Create" and "To Update"
-    const toCreate = [];
-    const toUpdate = [];
-
-    records.forEach(rec => {
-      const existingId = existingPhoneMap.get(rec.Phone);
-      const sanitized = sanitizeFields(rec);
-      
-      if (existingId) {
-        toUpdate.push({
-          id: existingId,
-          fields: sanitized
-        });
-      } else {
-        toCreate.push({
-          fields: sanitized
-        });
-      }
-    });
-
-    // 3. Process Batch Creations (API limit: 10 per request)
-    const createPromises = [];
-    for (let i = 0; i < toCreate.length; i += 10) {
-      const chunk = toCreate.slice(i, i + 10);
-      createPromises.push(base(TABLE_NAME).create(chunk));
-    }
-
-    // 4. Process Batch Updates (API limit: 10 per request)
-    const updatePromises = [];
-    for (let i = 0; i < toUpdate.length; i += 10) {
-      const chunk = toUpdate.slice(i, i + 10);
-      updatePromises.push(base(TABLE_NAME).update(chunk));
-    }
-
-    // 5. Fire all requests
-    await Promise.all([...createPromises, ...updatePromises]);
-
-    return { success: true, count: records.length };
-  } catch (err) {
-    console.error("=== BULK IMPORT ERROR ===");
-    console.error("Message:", err.message);
-    if (err.error) console.error("Airtable Error Code:", err.error);
-    if (err.statusCode) console.error("Status Code:", err.statusCode);
-    return { success: false, count: 0, error: err.message };
-  }
-}
-
 export async function createAirtableRecord(fields) {
-  if (!base) {
-    console.warn("Using dummy data, skipping Airtable SDK create hook.");
-    return true; // Simulate success
-  }
-
   try {
-    // Clean and strictly format the payload for Airtable
     const sanitizedPayload = sanitizeFields(fields);
-
-    await base(TABLE_NAME).create([
-      {
-        fields: sanitizedPayload
-      }
-    ]);
-    return true;
+    const response = await fetch('/api/airtable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: sanitizedPayload })
+    });
+    return response.ok;
   } catch (error) {
-    console.error("Error creating Airtable record:", error);
+    console.error("Error creating record:", error);
     return false;
   }
 }
 
 export async function deleteAirtableRecord(recordId) {
-  if (!base) {
-    console.warn("Using dummy data, skipping Airtable SDK delete hook.");
-    return true; // Simulate success
-  }
-
   try {
-    await base(TABLE_NAME).destroy(recordId);
-    return true;
+    const response = await fetch(`/api/airtable?id=${encodeURIComponent(recordId)}`, {
+      method: 'DELETE'
+    });
+    return response.ok;
   } catch (error) {
-    console.error("Error deleting Airtable record:", error);
+    console.error("Error deleting record:", error);
     return false;
+  }
+}
+
+export async function importRecordsBatch(records) {
+  try {
+    const cleanedRecords = records.map(r => ({ fields: sanitizeFields(r) }));
+    const response = await fetch('/api/airtable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanedRecords)
+    });
+    const data = await response.json();
+    return { success: response.ok, count: Array.isArray(data) ? data.length : 0 };
+  } catch (err) {
+    console.error("Bulk import error:", err);
+    return { success: false, count: 0, error: err.message };
+  }
+}
+
+export async function uploadFileToRecord(recordId, file, existingAttachments = []) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); 
+    
+    const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const uploadData = await uploadRes.json();
+    if (!uploadData.secure_url) throw new Error('Cloudinary upload failed');
+
+    const newAttachment = { url: uploadData.secure_url, filename: file.name };
+    const success = await updateAirtableRecord(recordId, {
+      Attachments: [...existingAttachments, newAttachment]
+    });
+
+    return success ? newAttachment : null;
+  } catch (error) {
+    console.error("Upload error:", error);
+    return null;
   }
 }
 

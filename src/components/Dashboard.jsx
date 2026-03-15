@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Link as LinkIcon, Users, CalendarDays, Briefcase, TrendingUp, Database, Search, X, Loader2, MessageCircle, BarChart3, HelpCircle, Eye, EyeOff, RotateCw } from 'lucide-react';
+import { Plus, Link as LinkIcon, Search, Eye, EyeOff, RotateCw, FileDown, Database, HelpCircle, Loader2, MessageCircle, BarChart3, X, Moon, Sun, Settings } from 'lucide-react';
 import { fetchAirtableRecords, createAirtableRecord, isValidIsraeliPhone } from '../airtable';
 import KanbanBoard from './KanbanBoard';
 import { Toaster, toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import HelpSidebar from './HelpSidebar';
 import HelpModal from './HelpModal';
 import GuidedTour from './GuidedTour';
+import StatsGrid from './StatsGrid';
+import AddClientModal from './AddClientModal';
+import FilterBar from './FilterBar';
+import MonthlyChart from './MonthlyChart';
 
 // Animated number count-up hook
 const useAnimatedNumber = (value, duration = 1100) => {
@@ -43,6 +47,9 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
 };
 
+const btnMotion = { whileHover: { scale: 1.02, y: -1 }, whileTap: { scale: 0.97 }, transition: { type: 'spring', stiffness: 400, damping: 25 } };
+const inputCls = "w-full border-2 border-[#EAE3D9] rounded-xl p-3 text-base outline-none focus:border-[#C5A880] focus:ring-2 focus:ring-[#C5A880]/10 transition-all";
+
 // Premium stat card icon wrapper
 const StatIcon = ({ children, color = '#C5A880' }) => (
   <div
@@ -58,24 +65,46 @@ const StatIcon = ({ children, color = '#C5A880' }) => (
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { searchQuery, setSearchQuery, focusMode, setFocusMode, refreshing, setRefreshing } = useOutletContext();
+  
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [focusMode, setFocusMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Help & Tour State
   const [showHelpSidebar, setShowHelpSidebar] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [runTour, setRunTour] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+
+  // Dark mode
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('crm_dark_mode') === 'true');
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('crm_dark_mode', darkMode);
+  }, [darkMode]);
+
+  // Filter State
+  const [filters, setFilters] = useState({ status: '', priority: '', eventType: '' });
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [newClient, setNewClient] = useState({
     Name: '', Company: '', Phone: '', Email: '',
-    ['Event Type']: '', ['Event Date']: '', Notes: '', Status: 'פניות חדשות'
+    ['Event Type']: '', ['Event Date']: '', Notes: '', Status: 'פניות חדשות',
+    Budget: '', Participants: ''
   });
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        setShowAddModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const tourSteps = [
     { target: '#stats-grid', title: 'תמונת המצב שלך', content: 'כאן תראי את תמונת המצב של העסק שלך היום - פניות חדשות, סגירות ויחס המרה.' },
@@ -106,18 +135,27 @@ const Dashboard = () => {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const data = await fetchAirtableRecords();
-      setInquiries(data);
+      try {
+        const data = await fetchAirtableRecords();
+        if (data.length > 0) setInquiries(data);
+      } catch {
+        // Silent fail — user can manually refresh
+      }
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    const data = await fetchAirtableRecords();
-    setInquiries(data);
-    setRefreshing(false);
-    toast.success('הנתונים רועננו בהצלחה! 🔄');
+    try {
+      const data = await fetchAirtableRecords();
+      setInquiries(data);
+      toast.success('הנתונים רועננו בהצלחה! 🔄');
+    } catch {
+      toast.error('שגיאה ברענון הנתונים');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSaveNewClient = async () => {
@@ -131,11 +169,9 @@ const Dashboard = () => {
     if (success) {
       toast.success('הלקוח נוסף בהצלחה! 🥂');
       setShowAddModal(false);
-      setNewClient({ Name: '', Company: '', Phone: '', Email: '', ['Event Type']: '', ['Event Date']: '', Notes: '', Status: 'פניות חדשות' });
-      setLoading(true);
-      const data = await fetchAirtableRecords();
-      setInquiries(data);
-      setLoading(false);
+      setNewClient({ Name: '', Company: '', Phone: '', Email: '', ['Event Type']: '', ['Event Date']: '', Notes: '', Status: 'פניות חדשות', Budget: '', Participants: '' });
+      // Refresh in background without showing skeleton loader
+      fetchAirtableRecords().then(data => setInquiries(data));
     } else {
       toast.error('שגיאה בשמירת הלקוח');
     }
@@ -203,11 +239,6 @@ const Dashboard = () => {
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(`היי ${lead.Name || 'לקוח יקר'}, זאת טל שני הפקת אירועים. אני רואה את הפנייה שלך ואשמח לעזור! ✨`)}`, '_blank');
   };
 
-  // Shared button motion props
-  const btnMotion = { whileHover: { scale: 1.02, y: -1 }, whileTap: { scale: 0.97 }, transition: { type: 'spring', stiffness: 400, damping: 25 } };
-
-  const inputCls = "w-full border-2 border-[#EAE3D9] rounded-xl p-3 text-base outline-none focus:border-[#C5A880] focus:ring-2 focus:ring-[#C5A880]/10 transition-all";
-
   return (
     <div className="min-h-screen flex flex-col ambient-bg">
 
@@ -244,6 +275,7 @@ const Dashboard = () => {
         <div className="flex items-center gap-2 flex-shrink-0">
           {[
             { onClick: handleRefresh, disabled: refreshing, icon: <RotateCw size={17} className={`text-[#C5A880] ${refreshing ? 'animate-spin' : ''}`} />, label: 'רענן' },
+            { onClick: exportToCSV, icon: <FileDown size={17} className="text-[#C5A880]" />, label: 'ייצוא' },
             { onClick: () => navigate('/import'), icon: <Database size={17} className="text-[#C5A880]" />, label: 'ייבוא' },
             { onClick: shareJoinLink, icon: <LinkIcon size={17} className="text-[#666666]" />, label: 'טופס חיצוני' },
           ].map((btn, i) => (
@@ -252,7 +284,7 @@ const Dashboard = () => {
               onClick={btn.onClick}
               disabled={btn.disabled}
               {...btnMotion}
-              className="flex items-center gap-1.5 bg-white text-[#666666] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#EAE3D9] shadow-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-white dark:bg-[#1a1917] text-[#666666] dark:text-[#9BACA4] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm disabled:opacity-50"
             >
               {btn.icon}
               <span className="hidden lg:inline">{btn.label}</span>
@@ -270,12 +302,30 @@ const Dashboard = () => {
           </motion.button>
 
           <motion.button
+            onClick={() => setDarkMode(d => !d)}
+            {...btnMotion}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold border shadow-sm transition-colors ${darkMode ? 'bg-[#1a1917] text-[#C5A880] border-[#2d2b28]' : 'bg-white text-[#666666] border-[#EAE3D9]'}`}
+            title={darkMode ? 'מצב בהיר' : 'מצב כהה'}
+          >
+            {darkMode ? <Sun size={17} /> : <Moon size={17} />}
+          </motion.button>
+
+          <motion.button
             onClick={() => setShowHelpSidebar(true)}
             {...btnMotion}
-            className="flex items-center gap-1.5 bg-[#F0F8F9] text-[#2C8A99] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#2C8A99]/20 shadow-sm"
+            className="flex items-center gap-1.5 bg-[#F0F8F9] text-[#2C8A99] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#2C8A99]/20 shadow-sm dark:bg-[#0d2a2f] dark:border-[#2C8A99]/30"
           >
             <HelpCircle size={17} strokeWidth={2.5} />
             <span className="hidden lg:inline">עזרה</span>
+          </motion.button>
+
+          <motion.button
+            onClick={() => navigate('/settings')}
+            {...btnMotion}
+            className="flex items-center gap-1.5 bg-white text-[#666666] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#EAE3D9] shadow-sm dark:bg-[#1a1917] dark:border-[#2d2b28]"
+          >
+            <Settings size={17} className="text-[#C5A880]" />
+            <span className="hidden lg:inline">הגדרות</span>
           </motion.button>
         </div>
       </header>
@@ -292,8 +342,12 @@ const Dashboard = () => {
               className="p-2.5 bg-white border border-[#EAE3D9] rounded-xl text-[#C5A880] shadow-sm disabled:opacity-50">
               <RotateCw size={20} className={refreshing ? 'animate-spin' : ''} />
             </motion.button>
+            <motion.button onClick={() => setDarkMode(d => !d)} whileTap={{ scale: 0.93 }}
+              className="p-2.5 bg-white dark:bg-[#1a1917] border border-[#EAE3D9] dark:border-[#2d2b28] rounded-xl text-[#C5A880] shadow-sm">
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </motion.button>
             <motion.button onClick={() => setShowHelpSidebar(true)} whileTap={{ scale: 0.93 }}
-              className="p-2.5 bg-white border border-[#EAE3D9] rounded-xl text-[#2C8A99] shadow-sm">
+              className="p-2.5 bg-white dark:bg-[#1a1917] border border-[#EAE3D9] dark:border-[#2d2b28] rounded-xl text-[#2C8A99] shadow-sm">
               <HelpCircle size={20} />
             </motion.button>
             <div className="w-9 h-9 bg-gradient-to-br from-[#C5A880] to-[#9b825f] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
@@ -357,158 +411,34 @@ const Dashboard = () => {
         </AnimatePresence>
 
         {/* ── Stats Grid ── */}
-        <div id="stats-grid" className="flex flex-col gap-4 shrink-0">
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-4 gap-4"
-            variants={statsContainerVariants}
-            initial="hidden"
-            animate={loading ? 'hidden' : 'visible'}
-          >
-            {/* New Leads */}
-            <motion.div variants={statCardVariants}
-              whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(197,168,128,0.14)', borderColor: 'rgba(197,168,128,0.35)' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="bg-white rounded-[20px] p-5 border border-[#EAE3D9] shadow-sm flex items-center gap-4 cursor-default"
-            >
-              <StatIcon><Users size={22} /></StatIcon>
-              <div>
-                <p className="text-xs font-semibold text-[#9BACA4] uppercase tracking-wide mb-0.5">לידים חדשים</p>
-                {loading
-                  ? <div className="h-9 w-14 skeleton-shimmer rounded-lg mt-1" />
-                  : <h2 className="text-4xl font-bold text-[#333333] stat-number leading-none">{animNewLeads}</h2>}
-              </div>
-            </motion.div>
+        <StatsGrid
+          loading={loading}
+          stats={{
+            animNewLeads,
+            animInProgress,
+            animEvents,
+            animConversion,
+            closedCount,
+            totalLeads,
+            newPct,
+            inProgressPct,
+            closedPct,
+            newLeadsCount,
+            inProgressCount,
+          }}
+        />
 
-            {/* In Progress */}
-            <motion.div variants={statCardVariants}
-              whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(155,172,164,0.14)', borderColor: 'rgba(155,172,164,0.35)' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="bg-white rounded-[20px] p-5 border border-[#EAE3D9] shadow-sm flex items-center gap-4 cursor-default"
-            >
-              <StatIcon color="#9BACA4"><Briefcase size={22} /></StatIcon>
-              <div>
-                <p className="text-xs font-semibold text-[#9BACA4] uppercase tracking-wide mb-0.5">בטיפול</p>
-                {loading
-                  ? <div className="h-9 w-14 skeleton-shimmer rounded-lg mt-1" />
-                  : <h2 className="text-4xl font-bold text-[#333333] leading-none">{animInProgress}</h2>}
-              </div>
-            </motion.div>
+        {/* ── Filter Bar ── */}
+        {!loading && (
+          <FilterBar filters={filters} setFilters={setFilters} />
+        )}
 
-            {/* Events This Week */}
-            <motion.div variants={statCardVariants}
-              whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(44,138,153,0.12)', borderColor: 'rgba(44,138,153,0.3)' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="bg-white rounded-[20px] p-5 border border-[#EAE3D9] shadow-sm flex items-center gap-4 cursor-default"
-            >
-              <StatIcon color="#2C8A99"><CalendarDays size={22} /></StatIcon>
-              <div>
-                <p className="text-xs font-semibold text-[#9BACA4] uppercase tracking-wide mb-0.5">אירועים השבוע</p>
-                {loading
-                  ? <div className="h-9 w-14 skeleton-shimmer rounded-lg mt-1" />
-                  : <h2 className="text-4xl font-bold text-[#333333] leading-none">{animEvents}</h2>}
-              </div>
-            </motion.div>
-
-            {/* Conversion Rate — premium dark card */}
-            <motion.div variants={statCardVariants}
-              whileHover={{ y: -3, boxShadow: '0 20px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(197,168,128,0.3)' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="rounded-[20px] p-5 border border-[#3a3a3a] shadow-lg flex items-center justify-between relative overflow-hidden cursor-default"
-              style={{ background: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)' }}
-            >
-              {/* Ambient gold glow */}
-              <div className="absolute inset-0 pointer-events-none" style={{
-                background: 'radial-gradient(ellipse 80% 60% at 20% 100%, rgba(197,168,128,0.18), transparent)'
-              }} />
-              {/* Subtle grain */}
-              <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }}
-              />
-              <div className="relative z-10">
-                <p className="text-[10px] font-bold text-[#C5A880] uppercase tracking-widest mb-1">יחס המרה</p>
-                {loading
-                  ? <div className="h-10 w-20 bg-[#3a3a3a] rounded-lg animate-pulse" />
-                  : (
-                    <div className="flex items-end gap-2">
-                      <h2 className="text-5xl font-black text-white leading-none">{animConversion}<span className="text-3xl font-bold text-[#C5A880]">%</span></h2>
-                    </div>
-                  )}
-                <p className="text-[#9BACA4] text-xs mt-1 font-medium">{closedCount} סגורים מתוך {totalLeads}</p>
-              </div>
-              <div className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center text-[#C5A880]"
-                style={{ background: 'rgba(197,168,128,0.1)', border: '1px solid rgba(197,168,128,0.2)' }}>
-                <TrendingUp size={26} />
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Loading skeleton for stats */}
-          {loading && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[1,2,3,4].map(i => (
-                <div key={i} className="bg-white rounded-[20px] p-5 border border-[#EAE3D9] flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl skeleton-shimmer" />
-                  <div className="flex flex-col gap-2">
-                    <div className="h-3 w-20 skeleton-shimmer rounded" />
-                    <div className="h-9 w-14 skeleton-shimmer rounded-lg" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Status Distribution Bar */}
-          <AnimatePresence>
-            {!loading && totalLeads > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="bg-white rounded-[16px] p-4 border border-[#EAE3D9] shadow-sm flex flex-col gap-2"
-              >
-                <div className="flex justify-between text-xs font-semibold text-[#9BACA4] px-0.5">
-                  <span>התפלגות פניות</span>
-                  <span className="text-[#666666]">סה״כ: {totalLeads}</span>
-                </div>
-                <div className="h-2 w-full bg-[#F5F2EB] rounded-full overflow-hidden flex">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${newPct}%` }}
-                    transition={{ duration: 1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="bg-[#C5A880] h-full"
-                    title={`פניות חדשות: ${Math.round(newPct)}%`}
-                  />
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${inProgressPct}%` }}
-                    transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="bg-[#9BACA4] h-full"
-                    title={`בטיפול: ${Math.round(inProgressPct)}%`}
-                  />
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${closedPct}%` }}
-                    transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                    className="bg-[#333333] h-full"
-                    title={`סגור: ${Math.round(closedPct)}%`}
-                  />
-                </div>
-                <div className="flex gap-5 text-xs mt-0.5">
-                  {[
-                    { color: '#C5A880', label: 'חדשים', count: newLeadsCount },
-                    { color: '#9BACA4', label: 'בטיפול', count: inProgressCount },
-                    { color: '#333333', label: 'סגורים', count: closedCount },
-                  ].map(({ color, label, count }) => (
-                    <div key={label} className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                      <span className="text-[#666666] font-medium">{label} ({count})</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* ── Desktop: Monthly Chart ── */}
+        {!loading && (
+          <div className="hidden md:block">
+            <MonthlyChart inquiries={inquiries} />
+          </div>
+        )}
 
         {/* ── Mobile: Manager's Pulse ── */}
         <div className="md:hidden flex flex-col gap-5 w-full">
@@ -533,6 +463,8 @@ const Dashboard = () => {
               <h3 className="text-lg font-bold text-[#333333] mt-0.5 leading-tight">{topEventType}</h3>
             </motion.div>
           </div>
+
+          <MonthlyChart inquiries={inquiries} />
 
           {/* Mobile leads list */}
           <div className="flex flex-col gap-2">
@@ -574,8 +506,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ── Desktop: Kanban Board ── */}
-        <div className="hidden md:flex flex-1 min-h-[420px]">
+        {/* ── Kanban Board ── */}
+        <div className="flex flex-1 min-h-[420px] overflow-x-auto">
           {loading ? (
             <div className="flex gap-5 h-full w-full overflow-hidden">
               {[1,2,3].map(i => (
@@ -599,6 +531,9 @@ const Dashboard = () => {
                   const hasUpcoming = i._rawDate && (new Date(i._rawDate) - new Date()) / (1000 * 60 * 60 * 24) <= 3;
                   if (!isNew && !hasUpcoming) return false;
                 }
+                if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
+                if (filters.priority && i.Priority !== filters.priority) return false;
+                if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
                 if (!searchQuery) return true;
                 const q = searchQuery.toLowerCase();
                 return i.Name?.toLowerCase().includes(q) || i.Company?.toLowerCase().includes(q) || i.Phone?.includes(q) || i['Event Type']?.toLowerCase().includes(q);
@@ -630,97 +565,14 @@ const Dashboard = () => {
         }}
       />
 
-      {/* ── Add Client Modal ── */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(26,26,26,0.5)', backdropFilter: 'blur(8px)' }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="bg-white w-full max-w-lg rounded-[24px] shadow-2xl overflow-hidden flex flex-col p-7 border border-[#EAE3D9]"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-[#333333]">לקוח חדש</h2>
-                  <p className="text-xs text-[#9BACA4] mt-0.5 font-medium">הוסיפי את הפרטים ונשמור ל-Airtable</p>
-                </div>
-                <motion.button
-                  onClick={() => setShowAddModal(false)}
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  className="p-2 bg-[#F5F2EB] hover:bg-[#EAE3D9] rounded-full text-[#666666] transition-colors"
-                >
-                  <X size={18} />
-                </motion.button>
-              </div>
-
-              <div className="flex flex-col gap-4 overflow-y-auto pr-0.5 hide-scrollbar" style={{ maxHeight: '65vh' }}>
-                {[
-                  { label: 'שם איש קשר (חובה)', key: 'Name', type: 'text', placeholder: 'לדוגמה: דני פרידמן' },
-                  { label: 'שם החברה (אופציונלי)', key: 'Company', type: 'text', placeholder: 'לדוגמה: גוגל ישראל' },
-                  { label: 'טלפון', key: 'Phone', type: 'tel', placeholder: '05X-XXXXXXX', dir: 'ltr' },
-                  { label: 'דוא"ל', key: 'Email', type: 'email', placeholder: 'name@example.com', dir: 'ltr' },
-                ].map(({ label, key, type, placeholder, dir }) => (
-                  <div key={key}>
-                    <label className="block text-xs font-bold text-[#666666] mb-1.5 uppercase tracking-wide">{label}</label>
-                    <input
-                      type={type} dir={dir} value={newClient[key]} placeholder={placeholder}
-                      onChange={(e) => setNewClient({ ...newClient, [key]: e.target.value })}
-                      className={inputCls + (dir ? ' text-right' : '')}
-                    />
-                  </div>
-                ))}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-[#666666] mb-1.5 uppercase tracking-wide">סוג אירוע</label>
-                    <select value={newClient['Event Type']} onChange={(e) => setNewClient({ ...newClient, ['Event Type']: e.target.value })} className={inputCls + ' bg-white'}>
-                      <option value="">בחר...</option>
-                      {['יום גיבוש','נופש חברה','הרמת כוסית','כנס','אחר'].map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#666666] mb-1.5 uppercase tracking-wide">תאריך האירוע</label>
-                    <input type="date" value={newClient['Event Date']} onChange={(e) => setNewClient({ ...newClient, ['Event Date']: e.target.value })} className={inputCls} />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#666666] mb-1.5 uppercase tracking-wide">הערות ראשוניות</label>
-                  <textarea
-                    value={newClient.Notes}
-                    onChange={(e) => setNewClient({ ...newClient, Notes: e.target.value })}
-                    className={inputCls + ' resize-none min-h-[90px]'}
-                    placeholder="פרטים נוספים, בקשות מיוחדות..."
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 pt-5 border-t border-[#EAE3D9]/60">
-                <motion.button
-                  onClick={handleSaveNewClient}
-                  disabled={isSaving}
-                  whileHover={!isSaving ? { scale: 1.01, boxShadow: '0 12px 24px rgba(197,168,128,0.3)' } : {}}
-                  whileTap={!isSaving ? { scale: 0.98 } : {}}
-                  transition={{ type: 'spring', stiffness: 380, damping: 22 }}
-                  className="w-full bg-gradient-to-r from-[#C5A880] to-[#b09673] text-white py-4 rounded-xl font-bold text-base shadow-[0_6px_16px_rgba(197,168,128,0.25)] disabled:opacity-60 flex justify-center items-center gap-2"
-                >
-                  {isSaving ? <Loader2 className="animate-spin" size={22} /> : 'שמור לקוח חדש'}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AddClientModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        newClient={newClient}
+        setNewClient={setNewClient}
+        onSave={handleSaveNewClient}
+        isSaving={isSaving}
+      />
 
       <HelpSidebar isOpen={showHelpSidebar} onClose={() => setShowHelpSidebar(false)} onOpenFullHelp={() => { setShowHelpSidebar(false); setShowHelpModal(true); }} />
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
