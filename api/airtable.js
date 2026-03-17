@@ -2,6 +2,7 @@ import Airtable from 'airtable';
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
+const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET;
 const TABLE_NAME = 'Table 1';
 
 const base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
@@ -9,6 +10,13 @@ const base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
 export default async function handler(req, res) {
   if (!AIRTABLE_PAT || !BASE_ID) {
     return res.status(500).json({ error: 'Airtable environment variables missing' });
+  }
+
+  if (!INTERNAL_SECRET) {
+    return res.status(500).json({ error: 'Server misconfigured' });
+  }
+  if (req.headers['x-internal-secret'] !== INTERNAL_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const { method, body, query } = req;
@@ -43,9 +51,6 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Airtable API Proxy Error:', error);
-    return res.status(error.statusCode || 500).json({
-      error: error.message,
-      details: error.body || null
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

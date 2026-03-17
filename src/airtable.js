@@ -49,9 +49,14 @@ function sanitizeFields(fields) {
   return sanitized;
 }
 
+const API_HEADERS = {
+  'Content-Type': 'application/json',
+  'x-internal-secret': import.meta.env.VITE_INTERNAL_API_SECRET || '',
+};
+
 export async function fetchAirtableRecords() {
   try {
-    const response = await fetch('/api/airtable');
+    const response = await fetch('/api/airtable', { headers: API_HEADERS });
     if (!response.ok) throw new Error('Failed to fetch records');
     const records = await response.json();
 
@@ -95,7 +100,7 @@ export async function updateAirtableRecord(recordId, fields) {
     const sanitizedFields = sanitizeFields(fields);
     const response = await fetch('/api/airtable', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: API_HEADERS,
       body: JSON.stringify({ id: recordId, fields: sanitizedFields })
     });
     return response.ok;
@@ -110,7 +115,7 @@ export async function createAirtableRecord(fields) {
     const sanitizedPayload = sanitizeFields(fields);
     const response = await fetch('/api/airtable', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: API_HEADERS,
       body: JSON.stringify({ fields: sanitizedPayload })
     });
     return response.ok;
@@ -123,7 +128,8 @@ export async function createAirtableRecord(fields) {
 export async function deleteAirtableRecord(recordId) {
   try {
     const response = await fetch(`/api/airtable?id=${encodeURIComponent(recordId)}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: API_HEADERS,
     });
     return response.ok;
   } catch (error) {
@@ -137,7 +143,7 @@ export async function importRecordsBatch(records) {
     const cleanedRecords = records.map(r => ({ fields: sanitizeFields(r) }));
     const response = await fetch('/api/airtable', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: API_HEADERS,
       body: JSON.stringify(cleanedRecords)
     });
     const data = await response.json();

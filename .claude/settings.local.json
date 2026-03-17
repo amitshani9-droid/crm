@@ -4,7 +4,13 @@
       "Bash(find \"c:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\\\\\u200F\\\\u200Fתיקיה חדשה \\(4\\)\" -maxdepth 1 -type f \\\\\\( -name \"*.json\" -o -name \"*.md\" -o -name \"*.html\" -o -name \"*.config.*\" \\\\\\))",
       "Bash(find \"c:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\\\\\u200F\\\\u200Fתיקיה חדשה \\(4\\)\" -name \"*.md\" -type f)",
       "Bash(ls \"C:/Users/amits/OneDrive/שולחן העבודה/‏‏תיקיה חדשה \\(4\\)/src/\")",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File 'c:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\claude-code-skills-bundle\\\\install.ps1')",
+      "Bash(cd:*)",
+      "Bash(cat \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\\\\.gitignore\")",
+      "Bash(type 'C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\\\\.gitignore')",
+      "Bash(find \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\" -type f -name \"*.json\" -o -name \"*.js\" -o -name \"*.jsx\")",
+      "Bash(find \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\" -type f \\\\\\( -name \"*.html\" -o -name \".env*\" \\\\\\))"
     ]
   }
 }
