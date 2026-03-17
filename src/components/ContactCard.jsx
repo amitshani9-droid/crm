@@ -296,11 +296,11 @@ const ContactCard = ({ data, onDelete }) => {
           </div>
           <div>
              <label className="block text-xs font-semibold text-[#666666] mb-1">טלפון</label>
-             <input type="tel" dir="ltr" value={editForm.Phone} onChange={e => setEditForm({...editForm, Phone: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none text-right transition-colors" placeholder="05X-XXXXXXX" onClick={e => e.stopPropagation()} />
+             <input type="tel" dir="ltr" value={editForm.Phone} onChange={e => setEditForm({...editForm, Phone: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none text-right transition-colors" placeholder="05X-XXXXXXX" onClick={e => e.stopPropagation()} />
           </div>
           <div>
              <label className="block text-xs font-semibold text-[#666666] mb-1">דוא"ל</label>
-             <input type="email" dir="ltr" value={editForm.Email} onChange={e => setEditForm({...editForm, Email: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] rounded-lg focus:border-[#C5A880] outline-none text-right transition-colors" placeholder="name@example.com" onClick={e => e.stopPropagation()} />
+             <input type="email" dir="ltr" value={editForm.Email} onChange={e => setEditForm({...editForm, Email: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none text-right transition-colors" placeholder="name@example.com" onClick={e => e.stopPropagation()} />
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
@@ -586,7 +586,7 @@ const ContactCard = ({ data, onDelete }) => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-col gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 overflow-hidden"
+            className="flex flex-col gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5"><Bell size={12} /> הוסיפי תזכורת</p>
@@ -595,13 +595,13 @@ const ContactCard = ({ data, onDelete }) => {
               value={reminderDraft.text}
               onChange={(e) => setReminderDraft(p => ({ ...p, text: e.target.value }))}
               placeholder="מה לזכור? (לדוגמה: לחזור אחרי שבועיים)"
-              className="w-full text-sm p-2 rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400 transition-colors"
+              className="w-full text-sm p-2 rounded-lg border border-amber-200 dark:border-amber-700 bg-white dark:bg-[#1a1917] dark:text-[#e8e4df] outline-none focus:border-amber-400 transition-colors"
             />
             <input
               type="date"
               value={reminderDraft.date}
               onChange={(e) => setReminderDraft(p => ({ ...p, date: e.target.value }))}
-              className="w-full text-sm p-2 rounded-lg border border-amber-200 bg-white outline-none focus:border-amber-400 transition-colors"
+              className="w-full text-sm p-2 rounded-lg border border-amber-200 dark:border-amber-700 bg-white dark:bg-[#1a1917] dark:text-[#e8e4df] outline-none focus:border-amber-400 transition-colors"
             />
             <div className="flex gap-2">
               <button onClick={saveReminder} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold py-2 rounded-lg transition-colors">שמור</button>

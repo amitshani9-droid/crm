@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useMemo, useCallback, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
 import { updateAirtableRecord, deleteAirtableRecord } from '../airtable';
 import toast from 'react-hot-toast';
@@ -6,33 +6,33 @@ import { useSettings } from '../hooks/useSettings';
 
 const KanbanBoard = ({ inquiries, setInquiries }) => {
   const { settings } = useSettings();
-  const columns = [
+  const columns = useMemo(() => [
     { id: 'פניות חדשות', title: settings.kanbanLabels['פניות חדשות'] },
     { id: 'בטיפול',      title: settings.kanbanLabels['בטיפול'] },
     { id: 'סגור',        title: settings.kanbanLabels['סגור'] },
-  ];
+  ], [settings.kanbanLabels]);
 
-  const getInquiriesForColumn = (statusId) => {
-    return inquiries.filter(inq => 
-      inq.Status === statusId || (!inq.Status && statusId === 'פניות חדשות')
-    );
-  };
+  const columnMap = useMemo(() => {
+    const map = { 'פניות חדשות': [], 'בטיפול': [], 'סגור': [] };
+    for (const inq of inquiries) {
+      const status = inq.Status || 'פניות חדשות';
+      if (map[status]) map[status].push(inq);
+    }
+    return map;
+  }, [inquiries]);
 
-  const handleDropRecord = async (recordId, newStatusId) => {
+  const handleDropRecord = useCallback(async (recordId, newStatusId) => {
     const recordToUpdate = inquiries.find(inq => inq.id === recordId);
     if (!recordToUpdate || recordToUpdate.Status === newStatusId) return;
 
     const previousStatus = recordToUpdate.Status;
 
-    // Optimistic UI update
     setInquiries(prev => prev.map(inq =>
       inq.id === recordId ? { ...inq, Status: newStatusId } : inq
     ));
 
-    // Update Airtable via SDK
     const success = await updateAirtableRecord(recordId, { Status: newStatusId });
     if (!success) {
-      // Roll back on failure
       setInquiries(prev => prev.map(inq =>
         inq.id === recordId ? { ...inq, Status: previousStatus } : inq
       ));
@@ -40,12 +40,11 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
     } else {
       toast.success('הסטטוס עודכן בהצלחה! ✨');
     }
-  };
+  }, [inquiries, setInquiries]);
 
   const deletionTimers = useRef({});
 
-  const handleDeleteRecord = (recordId, recordData) => {
-    // Store original index so undo restores the card to its exact position
+  const handleDeleteRecord = useCallback((recordId, recordData) => {
     let originalIndex;
     setInquiries(prev => {
       originalIndex = prev.findIndex(inq => inq.id === recordId);
@@ -54,7 +53,6 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
 
     let isUndone = false;
 
-    // Show undo toast
     toast(
       (t) => (
         <div className="flex items-center gap-4" dir="rtl">
@@ -84,13 +82,13 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
           </button>
         </div>
       ),
-      { 
+      {
         duration: 5000,
         position: 'bottom-center',
-        style: { 
-          background: '#1a1a1a', 
-          color: '#fff', 
-          borderRadius: '20px', 
+        style: {
+          background: '#1a1a1a',
+          color: '#fff',
+          borderRadius: '20px',
           padding: '16px 20px',
           boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
           border: '1px solid rgba(255,255,255,0.1)',
@@ -99,7 +97,6 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
       }
     );
 
-    // Perform actual deletion
     deletionTimers.current[recordId] = setTimeout(async () => {
       if (!isUndone) {
         const success = await deleteAirtableRecord(recordId);
@@ -110,28 +107,36 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
       }
       delete deletionTimers.current[recordId];
     }, 5000);
-  };
+  }, [setInquiries]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(deletionTimers.current).forEach(clearTimeout);
+    };
+  }, []);
 
   return (
-    <div className="flex gap-6 h-full w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-4 hide-scrollbar">
-      {columns.map((col, index) => {
-        const columnInquiries = getInquiriesForColumn(col.id);
-        
-        return (
-          <div key={col.id} id={index === 0 ? 'kanban-column-1' : undefined} className="min-w-[320px] w-[320px] max-w-[320px] flex-shrink-0 flex flex-col snap-center">
-            {/* We still use KanbanColumn for the drop logic, but we can pass the simplified title */}
-            <KanbanColumn 
-              id={col.id}
-              title={col.title} 
-              inquiries={columnInquiries} 
-              onDropRecord={handleDropRecord}
-              onDeleteRecord={handleDeleteRecord}
-            />
-          </div>
-        );
-      })}
-    </div>
+    <>
+      {/* Desktop: full Kanban */}
+      <div className="hidden md:flex gap-6 h-full w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-4 hide-scrollbar">
+        {columns.map((col, index) => {
+          const columnInquiries = columnMap[col.id];
+          return (
+            <div key={col.id} id={index === 0 ? 'kanban-column-1' : undefined} className="min-w-[320px] w-[320px] max-w-[320px] flex-shrink-0 flex flex-col snap-center">
+              <KanbanColumn
+                id={col.id}
+                title={col.title}
+                inquiries={columnInquiries}
+                onDropRecord={handleDropRecord}
+                onDeleteRecord={handleDeleteRecord}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 };
+
 
 export default KanbanBoard;

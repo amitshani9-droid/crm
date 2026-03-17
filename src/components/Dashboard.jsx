@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Link as LinkIcon, Search, Eye, EyeOff, RotateCw, FileDown, Database, HelpCircle, Loader2, MessageCircle, BarChart3, X, Moon, Sun, Settings } from 'lucide-react';
+import { Plus, Link as LinkIcon, Search, Eye, EyeOff, RotateCw, FileDown, Database, HelpCircle, MessageCircle, Phone as PhoneIcon, Moon, Sun, Settings, Calendar } from 'lucide-react';
 import { fetchAirtableRecords, createAirtableRecord, isValidIsraeliPhone } from '../airtable';
 import KanbanBoard from './KanbanBoard';
 import { Toaster, toast } from 'react-hot-toast';
@@ -31,37 +31,7 @@ const useAnimatedNumber = (value, duration = 1100) => {
   return display;
 };
 
-// Animation variants
-const statsContainerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.09 } }
-};
-
-const statCardVariants = {
-  hidden: { opacity: 0, y: 24, scale: 0.96 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 280, damping: 28 } }
-};
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
-};
-
 const btnMotion = { whileHover: { scale: 1.02, y: -1 }, whileTap: { scale: 0.97 }, transition: { type: 'spring', stiffness: 400, damping: 25 } };
-const inputCls = "w-full border-2 border-[#EAE3D9] rounded-xl p-3 text-base outline-none focus:border-[#C5A880] focus:ring-2 focus:ring-[#C5A880]/10 transition-all";
-
-// Premium stat card icon wrapper
-const StatIcon = ({ children, color = '#C5A880' }) => (
-  <div
-    className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 relative"
-    style={{
-      background: `linear-gradient(135deg, ${color}18, ${color}08)`,
-      boxShadow: `0 0 0 1px ${color}20, 0 2px 8px ${color}12`
-    }}
-  >
-    <div style={{ color }}>{children}</div>
-  </div>
-);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -84,6 +54,13 @@ const Dashboard = () => {
 
   // Filter State
   const [filters, setFilters] = useState({ status: '', priority: '', eventType: '' });
+
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 150);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -203,7 +180,7 @@ const Dashboard = () => {
     toast.success('הקובץ יוצא בהצלחה');
   };
 
-  const { totalLeads, newLeadsCount, inProgressCount, closedCount, conversionRate, newPct, inProgressPct, closedPct, eventsNext7DaysCount, topEventType, recentLeads, upcomingEvents } = useMemo(() => {
+  const { totalLeads, newLeadsCount, inProgressCount, closedCount, conversionRate, newPct, inProgressPct, closedPct, eventsNext7DaysCount, upcomingEvents } = useMemo(() => {
     const total = inquiries.length;
     const newCount = inquiries.filter(i => i.Status === 'פניות חדשות' || !i.Status).length;
     const inProgress = inquiries.filter(i => i.Status === 'בטיפול').length;
@@ -211,17 +188,13 @@ const Dashboard = () => {
     const today = new Date();
     const nextWeek = new Date(); nextWeek.setDate(today.getDate() + 7);
     const eventsNext7Days = inquiries.filter(inq => { if (!inq._rawDate) return false; const d = new Date(inq._rawDate); return d >= today && d <= nextWeek; }).length;
-    const eventTypeCounts = inquiries.map(i => i['Event Type']).filter(Boolean).reduce((acc, curr) => { acc[curr] = (acc[curr] || 0) + 1; return acc; }, {});
-    let topType = 'אין נתונים'; let maxCount = 0;
-    for (const [type, count] of Object.entries(eventTypeCounts)) { if (count > maxCount) { maxCount = count; topType = type; } }
     return {
       totalLeads: total, newLeadsCount: newCount, inProgressCount: inProgress, closedCount: closed,
       conversionRate: total > 0 ? Math.round((closed / total) * 100) : 0,
       newPct: total > 0 ? (newCount / total) * 100 : 0,
       inProgressPct: total > 0 ? (inProgress / total) * 100 : 0,
       closedPct: total > 0 ? (closed / total) * 100 : 0,
-      eventsNext7DaysCount: eventsNext7Days, topEventType: topType,
-      recentLeads: inquiries.filter(i => i.Status === 'פניות חדשות' || !i.Status).slice(0, 5),
+      eventsNext7DaysCount: eventsNext7Days,
       upcomingEvents: inquiries.filter(inq => { if (!inq._rawDate) return false; const diff = (new Date(inq._rawDate) - new Date()) / (1000 * 60 * 60 * 24); return diff >= 0 && diff <= 3; })
     };
   }, [inquiries]);
@@ -410,23 +383,25 @@ const Dashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* ── Stats Grid ── */}
-        <StatsGrid
-          loading={loading}
-          stats={{
-            animNewLeads,
-            animInProgress,
-            animEvents,
-            animConversion,
-            closedCount,
-            totalLeads,
-            newPct,
-            inProgressPct,
-            closedPct,
-            newLeadsCount,
-            inProgressCount,
-          }}
-        />
+        {/* ── Stats Grid (desktop only) ── */}
+        <div className="hidden md:block">
+          <StatsGrid
+            loading={loading}
+            stats={{
+              animNewLeads,
+              animInProgress,
+              animEvents,
+              animConversion,
+              closedCount,
+              totalLeads,
+              newPct,
+              inProgressPct,
+              closedPct,
+              newLeadsCount,
+              inProgressCount,
+            }}
+          />
+        </div>
 
         {/* ── Filter Bar ── */}
         {!loading && (
@@ -440,74 +415,108 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* ── Mobile: Manager's Pulse ── */}
-        <div className="md:hidden flex flex-col gap-5 w-full">
-          <div className="grid grid-cols-2 gap-3">
-            {/* Pie */}
-            <motion.div variants={fadeUp} initial="hidden" animate="visible"
-              className="bg-white rounded-[20px] p-4 border border-[#EAE3D9] shadow-sm flex flex-col items-center justify-center min-h-[150px]">
-              <p className="text-xs font-semibold text-[#9BACA4] mb-3 w-full text-right uppercase tracking-wide">התפלגות</p>
-              <div className="w-20 h-20 rounded-full shadow-inner" style={{
-                background: totalLeads > 0
-                  ? `conic-gradient(#C5A880 0% ${newPct}%, #9BACA4 ${newPct}% ${newPct + inProgressPct}%, #333333 ${newPct + inProgressPct}% 100%)`
-                  : '#EAE3D9'
-              }} />
-            </motion.div>
-            {/* Top Event Type */}
-            <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.1 }}
-              className="bg-white rounded-[20px] p-4 border border-[#EAE3D9] shadow-sm flex flex-col justify-center min-h-[150px]">
-              <div className="w-9 h-9 rounded-xl bg-[#C5A880]/10 flex items-center justify-center text-[#C5A880] mb-2.5">
-                <BarChart3 size={18} />
+        {/* ── Mobile: Client List ── */}
+        {!loading && (
+          <div className="md:hidden flex flex-col gap-3 pb-2">
+            {/* Stats strip */}
+            <div className="flex gap-3">
+              <div className="flex-1 bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] text-center shadow-sm">
+                <p className="text-2xl font-bold text-[#333333] dark:text-[#e8e4df]">{newLeadsCount}</p>
+                <p className="text-[11px] text-[#9BACA4] font-semibold mt-0.5">פניות חדשות</p>
               </div>
-              <p className="text-xs font-semibold text-[#9BACA4]">אירוע מוביל</p>
-              <h3 className="text-lg font-bold text-[#333333] mt-0.5 leading-tight">{topEventType}</h3>
-            </motion.div>
-          </div>
-
-          <MonthlyChart inquiries={inquiries} />
-
-          {/* Mobile leads list */}
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center px-0.5 mb-1">
-              <h3 className="text-sm font-bold text-[#333333]">פניות חדשות שניכנסו</h3>
-              <span className="text-xs text-[#9BACA4] font-medium">{recentLeads.length} פניות</span>
+              <div className="flex-1 bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] text-center shadow-sm">
+                <p className="text-2xl font-bold text-[#C5A880]">{conversionRate}%</p>
+                <p className="text-[11px] text-[#9BACA4] font-semibold mt-0.5">סגירה</p>
+              </div>
+              <div className="flex-1 bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] text-center shadow-sm">
+                <p className="text-2xl font-bold text-[#333333] dark:text-[#e8e4df]">{totalLeads}</p>
+                <p className="text-[11px] text-[#9BACA4] font-semibold mt-0.5">סה"כ</p>
+              </div>
             </div>
+
+            {/* All clients sorted: new → in-progress → closed */}
             {(() => {
-              const filtered = searchQuery
-                ? recentLeads.filter(l => [l.Name, l.Company, l.Phone].filter(Boolean).some(v => v.toLowerCase().includes(searchQuery.toLowerCase())))
-                : recentLeads;
-              return filtered.length > 0 ? filtered.map((lead, idx) => (
-                <motion.div
-                  key={lead.id}
-                  initial={{ opacity: 0, x: 12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.07, type: 'spring', stiffness: 300, damping: 30 }}
-                  className="bg-white rounded-2xl p-4 border border-[#EAE3D9] shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex justify-between items-center"
-                >
-                  <div className="flex flex-col gap-0.5 overflow-hidden">
-                    <span className="font-bold text-[#333333] text-base truncate">{lead.Company || lead.Name}</span>
-                    {lead.Company && lead.Name && <span className="text-[#9BACA4] text-xs truncate">{lead.Name}</span>}
-                    {lead['Event Type'] && <span className="text-[#C5A880] text-xs font-semibold">{lead['Event Type']}</span>}
-                  </div>
-                  <motion.button
-                    onClick={() => handleQuickWhatsApp(lead)}
-                    whileTap={{ scale: 0.9 }}
-                    className="flex-shrink-0 w-11 h-11 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-md"
-                  >
-                    <MessageCircle size={20} />
-                  </motion.button>
-                </motion.div>
-              )) : (
-                <div className="bg-white rounded-2xl p-6 border border-[#EAE3D9] text-center text-[#9BACA4] text-sm">
-                  אין פניות חדשות שממתינות לטיפול
+              const STATUS_ORDER = { 'פניות חדשות': 0, 'בטיפול': 1, 'סגור': 2 };
+              const STATUS_STYLE = {
+                'פניות חדשות': 'bg-blue-50 text-blue-600 border-blue-100',
+                'בטיפול':      'bg-amber-50 text-amber-600 border-amber-100',
+                'סגור':        'bg-green-50 text-green-700 border-green-100',
+              };
+              const q = debouncedSearch.toLowerCase();
+              const list = inquiries
+                .filter(i => {
+                  if (focusMode) {
+                    const isNew = i.Status === 'פניות חדשות' || !i.Status;
+                    const hasUpcoming = i._rawDate && (new Date(i._rawDate) - new Date()) / (1000 * 60 * 60 * 24) <= 3;
+                    if (!isNew && !hasUpcoming) return false;
+                  }
+                  if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
+                  if (filters.priority && i.Priority !== filters.priority) return false;
+                  if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
+                  if (!q) return true;
+                  return [i.Name, i.Company, i.Phone, i['Event Type']].filter(Boolean).some(v => v.toLowerCase().includes(q));
+                })
+                .sort((a, b) => (STATUS_ORDER[a.Status || 'פניות חדשות'] || 0) - (STATUS_ORDER[b.Status || 'פניות חדשות'] || 0));
+
+              if (list.length === 0) return (
+                <div className="bg-white dark:bg-[#1a1917] rounded-2xl p-6 border border-[#EAE3D9] dark:border-[#2d2b28] text-center text-[#9BACA4] text-sm">
+                  {searchQuery ? 'לא נמצאו תוצאות' : 'אין לקוחות עדיין'}
                 </div>
               );
+
+              return list.map((lead, idx) => {
+                const status = lead.Status || 'פניות חדשות';
+                const name = lead.Company || lead.Name || 'ללא שם';
+                return (
+                  <motion.div
+                    key={lead.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04, type: 'spring', stiffness: 320, damping: 30 }}
+                    className="bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm flex items-center gap-3"
+                  >
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#EAE3D9] to-[#C5A880] flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[#333333] dark:text-[#e8e4df] truncate text-base leading-tight">{name}</p>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLE[status]}`}>{status}</span>
+                        {lead['Event Type'] && <span className="text-[11px] text-[#6c8579] bg-[#9BACA4]/10 px-2 py-0.5 rounded-full">{lead['Event Type']}</span>}
+                      </div>
+                      {lead['Event Date'] && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Calendar size={11} className="text-[#C5A880]" />
+                          <span className="text-[11px] text-[#9BACA4]">{lead['Event Date']}</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Actions */}
+                    <div className="flex gap-2 flex-shrink-0">
+                      {lead.Phone && (
+                        <a href={`tel:${lead.Phone}`} onClick={e => e.stopPropagation()}
+                          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#F5F2EB] dark:bg-[#252320] text-[#9BACA4] hover:text-[#C5A880] transition-colors">
+                          <PhoneIcon size={16} />
+                        </a>
+                      )}
+                      {lead.Phone && (
+                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleQuickWhatsApp(lead)}
+                          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm">
+                          <MessageCircle size={16} />
+                        </motion.button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              });
             })()}
           </div>
-        </div>
+        )}
 
-        {/* ── Kanban Board ── */}
-        <div className="flex flex-1 min-h-[420px] overflow-x-auto">
+        {/* ── Kanban Board (desktop only) ── */}
+        <div className="hidden md:flex flex-1 min-h-[420px] overflow-x-auto">
           {loading ? (
             <div className="flex gap-5 h-full w-full overflow-hidden">
               {[1,2,3].map(i => (
@@ -534,8 +543,8 @@ const Dashboard = () => {
                 if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
                 if (filters.priority && i.Priority !== filters.priority) return false;
                 if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
-                if (!searchQuery) return true;
-                const q = searchQuery.toLowerCase();
+                if (!debouncedSearch) return true;
+                const q = debouncedSearch.toLowerCase();
                 return i.Name?.toLowerCase().includes(q) || i.Company?.toLowerCase().includes(q) || i.Phone?.includes(q) || i['Event Type']?.toLowerCase().includes(q);
               })}
               setInquiries={setInquiries}

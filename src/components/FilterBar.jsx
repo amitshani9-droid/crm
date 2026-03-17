@@ -40,14 +40,14 @@ const FilterBar = ({ filters, setFilters }) => {
   const clearAll = () => setFilters({ status: '', priority: '', eventType: '' });
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2">
+    <div className="flex flex-nowrap overflow-x-auto hide-scrollbar items-center gap-2 py-2">
       {/* Status */}
       {STATUS_OPTIONS.map(s => (
         <Chip key={s} label={s} active={filters.status === s} colors={STATUS_COLORS[s]}
           onClick={() => toggle('status', s)} />
       ))}
 
-      <div className="w-px h-4 bg-[#EAE3D9] mx-0.5" />
+      <div className="w-px h-4 bg-[#EAE3D9] dark:bg-[#2d2b28] mx-0.5" />
 
       {/* Priority */}
       {PRIORITY_OPTIONS.map(p => {
@@ -59,7 +59,7 @@ const FilterBar = ({ filters, setFilters }) => {
         );
       })}
 
-      <div className="w-px h-4 bg-[#EAE3D9] mx-0.5" />
+      <div className="w-px h-4 bg-[#EAE3D9] dark:bg-[#2d2b28] mx-0.5" />
 
       {/* Event Type */}
       {EVENT_OPTIONS.map(e => (

@@ -14,8 +14,10 @@ const MonthlyChart = ({ inquiries }) => {
     }
 
     inquiries.forEach(inq => {
-      if (!inq._rawDate) return;
-      const d = new Date(inq._rawDate);
+      // Count by when the inquiry was CREATED
+      const dateStr = inq.createdTime;
+      if (!dateStr) return;
+      const d = new Date(dateStr);
       if (isNaN(d)) return;
       const slot = months.find(m => m.year === d.getFullYear() && m.month === d.getMonth());
       if (slot) slot.count++;
@@ -42,8 +44,8 @@ const MonthlyChart = ({ inquiries }) => {
         {bars.map((bar, i) => {
           const pct = maxCount > 0 ? (bar.count / maxCount) * 100 : 0;
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-              <span className="text-[10px] font-bold text-[#333333] dark:text-[#e8e4df]">{bar.count > 0 ? bar.count : ''}</span>
+            <div key={i} className="flex-1 flex flex-col items-center gap-1.5" title={`${bar.label}: ${bar.count} פניות`}>
+              <span className="text-[10px] font-bold text-[#333333] dark:text-[#e8e4df]">{bar.count > 0 ? bar.count : '·'}</span>
               <div className="w-full relative flex items-end" style={{ height: '72px' }}>
                 <motion.div
                   initial={{ height: 0 }}
