@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Calendar, MessageSquare, Phone, Mail, User, Info, Briefcase } from 'lucide-react';
 import { createAirtableRecord, isValidIsraeliPhone } from '../airtable';
 import { useSettings } from '../hooks/useSettings';
+import { toast, Toaster } from 'react-hot-toast';
 
 const JoinPage = () => {
   const { settings } = useSettings();
@@ -35,11 +36,11 @@ const JoinPage = () => {
     }
 
     if (!formData.Phone) {
-      alert('יש להזין מספר טלפון.');
+      toast.error('יש להזין מספר טלפון.');
       return;
     }
     if (!isValidIsraeliPhone(formData.Phone)) {
-      alert('מספר הטלפון אינו תקין. אנא הזן מספר ישראלי תקני (05X-XXXXXXX).');
+      toast.error('מספר הטלפון אינו תקין. אנא הזן מספר ישראלי תקני (05X-XXXXXXX).');
       return;
     }
 
@@ -56,7 +57,7 @@ const JoinPage = () => {
     if (success) {
       setIsSuccess(true);
     } else {
-      alert('אירעה שגיאה בשליחת הפרטים. אנא נסה שוב או צור קשר טלפוני.');
+      toast.error('אירעה שגיאה בשליחת הפרטים. אנא נסה שוב או צור קשר טלפוני.');
     }
   };
 
@@ -85,6 +86,7 @@ const JoinPage = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+      <Toaster position="top-center" toastOptions={{ duration: 4000, style: { fontFamily: 'Heebo, sans-serif', fontSize: '15px', fontWeight: '600' } }} />
       
       {/* Subtle luxury background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#2C8A99]/5 via-[#FDFBF7] to-[#6B3E8E]/5 pointer-events-none" />
@@ -104,7 +106,7 @@ const JoinPage = () => {
           >
             {/* Logo */}
             <motion.div variants={itemVariants} className="mb-8">
-               <img src="/logo.png" alt="Tal Shani Logo" className="h-28 object-contain" />
+               <img src="/logo.png" alt="Tal Shani Logo" className="h-28 object-contain" onError={(e) => e.target.style.display='none'} />
             </motion.div>
 
             {/* Hero Text */}
@@ -265,6 +267,7 @@ const JoinPage = () => {
                         name="Event Date"
                         value={formData['Event Date']}
                         onChange={handleChange}
+                        min={new Date().toISOString().split('T')[0]}
                         className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#333333] focus:ring-2 focus:ring-[#2C8A99]/40 focus:border-[#2C8A99] outline-none transition-all"
                       />
                     </div>
@@ -300,7 +303,7 @@ const JoinPage = () => {
                       {isSubmitting ? (
                          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : (
-                        "בואו נצא לדרך! (שליחת פנייה)"
+                        "שלח פנייה"
                       )}
                     </button>
                   </motion.div>
@@ -330,7 +333,7 @@ const JoinPage = () => {
             
             <h2 className="text-3xl font-bold text-[#6B3E8E] mb-3">תודה!</h2>
             <p className="text-[#666666] text-lg leading-relaxed">
-              הפנייה התקבלת. טל תחזור אליכם עם הצעה מלאה בערך.
+              הפנייה התקבלה בהצלחה! טל תחזור אליכם בהקדם עם הצעה מותאמת.
             </p>
           </motion.div>
         )}

@@ -26,18 +26,14 @@ const Chip = ({ label, active, onClick, colors }) => (
 const FilterBar = ({ filters, setFilters }) => {
   const { settings } = useSettings();
   const STATUS_OPTIONS = ['פניות חדשות', 'בטיפול', 'סגור'];
-  const PRIORITY_OPTIONS = settings.priorities.map(p => p.id);
   const EVENT_OPTIONS = settings.eventTypes;
-  const PRIORITY_COLORS = Object.fromEntries(
-    settings.priorities.map(p => [p.id, { active: p.bg, text: p.text, border: p.border }])
-  );
-  const hasActive = filters.status || filters.priority || filters.eventType;
+  const hasActive = filters.status || filters.eventType || filters.quoteSent;
 
   const toggle = (key, val) => {
     setFilters(prev => ({ ...prev, [key]: prev[key] === val ? '' : val }));
   };
 
-  const clearAll = () => setFilters({ status: '', priority: '', eventType: '' });
+  const clearAll = () => setFilters({ status: '', eventType: '', quoteSent: '' });
 
   return (
     <div className="flex flex-nowrap overflow-x-auto hide-scrollbar items-center gap-2 py-2">
@@ -49,23 +45,21 @@ const FilterBar = ({ filters, setFilters }) => {
 
       <div className="w-px h-4 bg-[#EAE3D9] dark:bg-[#2d2b28] mx-0.5" />
 
-      {/* Priority */}
-      {PRIORITY_OPTIONS.map(p => {
-        const pObj = settings.priorities.find(pr => pr.id === p);
-        return (
-          <Chip key={p} label={`${pObj?.emoji || ''} ${pObj?.label || p}`}
-            active={filters.priority === p} colors={PRIORITY_COLORS[p]}
-            onClick={() => toggle('priority', p)} />
-        );
-      })}
-
-      <div className="w-px h-4 bg-[#EAE3D9] dark:bg-[#2d2b28] mx-0.5" />
-
       {/* Event Type */}
       {EVENT_OPTIONS.map(e => (
         <Chip key={e} label={e} active={filters.eventType === e}
           onClick={() => toggle('eventType', e)} />
       ))}
+
+      <div className="w-px h-4 bg-[#EAE3D9] dark:bg-[#2d2b28] mx-0.5" />
+
+      {/* Quote Sent */}
+      <Chip
+        label="📄 נשלח הצ״מ"
+        active={!!filters.quoteSent}
+        colors={{ active: '#F3E8FF', text: '#7C3AED', border: '#DDD6FE' }}
+        onClick={() => setFilters(prev => ({ ...prev, quoteSent: prev.quoteSent ? '' : 'true' }))}
+      />
 
       {/* Clear all */}
       <AnimatePresence>

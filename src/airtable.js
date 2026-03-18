@@ -38,10 +38,14 @@ function sanitizeFields(fields) {
   
   const optionalKeys = ['Company', 'Email', 'Event Type', 'Event Date', 'Notes', 'Budget', 'Participants', 'Priority'];
   optionalKeys.forEach(key => {
-    if (fields[key] !== undefined && fields[key] !== null && String(fields[key]).trim() !== '') {
-      sanitized[key] = fields[key];
+    if (fields[key] !== undefined) {
+      sanitized[key] = fields[key] ?? '';
     }
   });
+
+  if (fields['Quote Sent'] !== undefined) {
+    sanitized['Quote Sent'] = Boolean(fields['Quote Sent']);
+  }
 
   if (fields.Attachments !== undefined && Array.isArray(fields.Attachments)) {
     sanitized.Attachments = fields.Attachments;
@@ -168,7 +172,7 @@ export async function uploadFileToRecord(recordId, file, existingAttachments = [
     const uploadData = await uploadRes.json();
     if (!uploadData.secure_url) throw new Error('Cloudinary upload failed');
 
-    const newAttachment = { url: uploadData.secure_url, filename: file.name };
+    const newAttachment = { url: uploadData.secure_url, filename: file.name, type: file.type };
     const success = await updateAirtableRecord(recordId, {
       Attachments: [...existingAttachments, newAttachment]
     });

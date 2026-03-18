@@ -3,9 +3,7 @@ import Airtable from 'airtable';
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET;
-const TABLE_NAME = 'Table 1';
-
-const base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
+const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME || 'Table 1';
 
 export default async function handler(req, res) {
   if (!AIRTABLE_PAT || !BASE_ID) {
@@ -19,6 +17,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  const base = new Airtable({ apiKey: AIRTABLE_PAT }).base(BASE_ID);
   const { method, body, query } = req;
 
   try {

@@ -1,11 +1,17 @@
 import { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon, Trash2, Bell, BellOff, X } from 'lucide-react';
+import { MessageCircle, Mail, Phone as PhoneIcon, Calendar, Edit2, Check, Plus, Paperclip, Upload, File as FileIcon, Trash2, Bell, BellOff, X, CalendarPlus } from 'lucide-react';
 import { updateAirtableRecord, uploadFileToRecord, isValidIsraeliPhone } from '../airtable';
 import toast from 'react-hot-toast';
 import { useSettings } from '../hooks/useSettings';
 
-const ContactCard = ({ data, onDelete }) => {
+const STATUSES = [
+  { id: 'פניות חדשות', label: 'חדש', color: 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100' },
+  { id: 'בטיפול',      label: 'בטיפול', color: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100' },
+  { id: 'סגור',        label: 'סגור', color: 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' },
+];
+
+const ContactCard = ({ data, onDelete, onStatusChange }) => {
   const { settings } = useSettings();
   const PRIORITY_CONFIG = Object.fromEntries(
     settings.priorities.map(p => [p.id, { bg: p.bg, text: p.text, border: p.border, emoji: p.emoji }])
@@ -28,6 +34,7 @@ const ContactCard = ({ data, onDelete }) => {
 
   const Company  = localData?.Company;
   const Priority = localData?.Priority;
+  const quoteSent = localData?.['Quote Sent'] || false;
 
   // Calculate "Waiting" status: > 7 days in "בטיפול" 
   const isWaiting = useMemo(() => {
@@ -56,7 +63,7 @@ const ContactCard = ({ data, onDelete }) => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const fileInputRef = useRef(null);
@@ -96,6 +103,51 @@ const ContactCard = ({ data, onDelete }) => {
     if (onDelete) onDelete(id, localData);
   };
 
+  const handleToggleQuote = async (e) => {
+    e.stopPropagation();
+    const newVal = !quoteSent;
+    setLocalData(prev => ({ ...prev, 'Quote Sent': newVal }));
+    const success = await updateAirtableRecord(id, { 'Quote Sent': newVal });
+    if (!success) {
+      setLocalData(prev => ({ ...prev, 'Quote Sent': !newVal }));
+      toast.error('שגיאה בעדכון');
+    } else {
+      toast.success(newVal ? 'הצעת מחיר סומנה כנשלחה ✓' : 'סימון הוסר');
+    }
+  };
+
+  const handleAddToCalendar = (e) => {
+    e.stopPropagation();
+    const rawDate = localData?._rawDate || localData?.['Event Date'];
+    if (!rawDate) { toast.error('אין תאריך אירוע'); return; }
+    // Parse YYYY-MM-DD or Israeli DD/MM/YYYY
+    let d;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+      d = new Date(rawDate);
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawDate)) {
+      const [day, month, year] = rawDate.split('/');
+      d = new Date(`${year}-${month}-${day}`);
+    } else {
+      d = new Date(rawDate);
+    }
+    if (isNaN(d.getTime())) { toast.error('תאריך לא תקין'); return; }
+    const fmt = (n) => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}${fmt(d.getMonth() + 1)}${fmt(d.getDate())}`;
+    const title = encodeURIComponent(`אירוע - ${Name || Company || 'לקוח'}`);
+    const details = encodeURIComponent([
+      Name ? `שם: ${Name}` : '',
+      Company ? `חברה: ${Company}` : '',
+      Phone ? `טלפון: ${Phone}` : '',
+      Budget ? `תקציב: ₪${Number(Budget).toLocaleString()}` : '',
+      Participants ? `משתתפים: ${Participants}` : '',
+      EventType ? `סוג אירוע: ${EventType}` : '',
+    ].filter(Boolean).join('\n'));
+    window.open(
+      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}&details=${details}`,
+      '_blank'
+    );
+  };
+
   const getInitials = (nameStr) => {
     if (!nameStr) return '?';
     // Take first letter of the first two words if available
@@ -104,21 +156,6 @@ const ContactCard = ({ data, onDelete }) => {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return nameStr.charAt(0).toUpperCase();
-  };
-
-  const handleWhatsApp = (e) => {
-    e.stopPropagation();
-    if (Phone && Name) {
-      // Input is standard 10-digit local format (e.g., 0545773044)
-      // Strip non-digits just in case, then remove leading '0' and prepend '972'
-      const digits = Phone.replace(/\D/g, '');
-      const waNumber = digits.startsWith('0') ? `972${digits.substring(1)}` : `972${digits}`;
-      
-      const defaultMessage = `היי ${Name || ''}, זאת טל שני הפקת אירועים. מוזמנים ליצור קשר בכל שאלה! 💫`;
-      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(defaultMessage)}`, '_blank');
-    } else {
-      toast.error('חסר מספר טלפון או שם');
-    }
   };
 
   const handleEmail = (e) => {
@@ -243,12 +280,6 @@ const ContactCard = ({ data, onDelete }) => {
     }
   };
 
-  const handleDragStart = (e) => {
-    e.dataTransfer.setData('recordId', id);
-    // Slight opacity change on the ghost image doesn't work well natively, but we can set effectAllowed
-    e.dataTransfer.effectAllowed = "move";
-  };
-
   const whatsappTemplates = [
     { label: '👋 הודעה ראשונית', message: `היי ${Name || ''}, זאת טל שני הפקת אירועים. מוזמנים ליצור קשר בכל שאלה! 💫` },
     { label: '🔁 מעקב', message: `היי ${Name || ''}, רציתי לבדוק אם יש שאלות על ההצעה שלנו 😊` },
@@ -272,11 +303,8 @@ const ContactCard = ({ data, onDelete }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      whileDrag={{ rotate: 2, scale: 1.02, zIndex: 100 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      draggable 
-      onDragStart={handleDragStart}
-      className={`bg-white dark:bg-[#1a1917] p-5 rounded-[16px] border ${isWaiting ? 'border-amber-400 border-2 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-[#EAE3D9] dark:border-[#2d2b28]'} shadow-[0_4px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_20px_rgba(197,168,128,0.1)] hover:-translate-y-[2px] transition-all duration-300 flex flex-col gap-3 cursor-grab active:cursor-grabbing relative overflow-hidden`}
+      className={`bg-white dark:bg-[#1a1917] p-5 rounded-[16px] border ${isWaiting ? 'border-amber-400 border-2 shadow-[0_0_15px_rgba(251,191,36,0.2)]' : 'border-[#EAE3D9] dark:border-[#2d2b28]'} shadow-[0_4px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_10px_20px_rgba(197,168,128,0.1)] hover:-translate-y-[2px] transition-all duration-300 flex flex-col gap-3 relative overflow-hidden`}
       style={priorityCfg ? { borderColor: priorityCfg.border } : undefined}
     >
       {isWaiting && (
@@ -325,14 +353,7 @@ const ContactCard = ({ data, onDelete }) => {
                <input type="number" value={editForm.Participants} onChange={e => setEditForm({...editForm, Participants: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] rounded-lg focus:border-[#C5A880] outline-none transition-colors" placeholder="0" onClick={e => e.stopPropagation()} />
             </div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#666666] mb-1">עדיפות</label>
-            <select value={editForm.Priority} onChange={e => setEditForm({...editForm, Priority: e.target.value})} className="w-full text-base p-2 border border-[#EAE3D9] dark:border-[#2d2b28] rounded-lg focus:border-[#C5A880] outline-none bg-white dark:bg-[#1a1917] text-[#333333] dark:text-[#e8e4df] transition-colors" onClick={e => e.stopPropagation()}>
-              <option value="">- ללא עדיפות -</option>
-              {settings.priorities.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.label}</option>)}
-            </select>
-          </div>
-          <div className="mt-4 flex gap-2">
+<div className="mt-4 flex gap-2">
             <button disabled={isSaving || isDeleting} onClick={handleSaveCard} className="flex-1 bg-[#C5A880] text-white py-2 rounded-lg font-bold shadow-md hover:bg-[#b09673] flex items-center justify-center gap-1 active:scale-95 transition-all"><Check size={18}/> שמור שינויים</button>
             <button disabled={isSaving || isDeleting} onClick={(e) => { e.stopPropagation(); setIsEditingCard(false); }} className="px-5 bg-white border border-[#EAE3D9] text-[#666666] rounded-lg font-bold hover:bg-[#FDFBF7] transition-all">ביטול</button>
             <button disabled={isSaving || isDeleting} onClick={handleDelete} className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-all active:scale-95" title="מחק לקוח">
@@ -342,36 +363,25 @@ const ContactCard = ({ data, onDelete }) => {
         </div>
       ) : (
         <>
-          {/* Priority badge */}
-          {priorityCfg && (
-            <div className="flex justify-end -mb-1">
-              <span
-                className="text-xs font-bold px-2.5 py-1 rounded-full"
-                style={{ background: priorityCfg.bg, color: priorityCfg.text, border: `1px solid ${priorityCfg.border}` }}
-              >
-                {priorityCfg.emoji} {Priority}
-              </span>
-            </div>
-          )}
-
-          <div className="flex justify-between items-start gap-3">
+<div className="flex justify-between items-start gap-3">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#EAE3D9] to-[#C5A880] rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner">
-                {getInitials(Company ? Company : Name)}
+                {getInitials(Name || Company)}
               </div>
               <div className="flex flex-col flex-1">
-                <h3 className="text-xl font-bold text-[#333333] dark:text-[#e8e4df] leading-tight">
-                   {Company || Name || 'ללא שם'}
-                </h3>
-                {Company && Name && (
-                   <span className="text-base text-[#666666] leading-tight mt-1">{Name}</span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[10px] font-semibold text-[#9BACA4] uppercase tracking-wide">שם</span>
+                  <h3 className="text-xl font-bold text-[#333333] dark:text-[#e8e4df] leading-tight">
+                    {Name || 'ללא שם'}
+                  </h3>
+                </div>
+                {Company && (
+                  <div className="flex flex-col gap-0.5 mt-2">
+                    <span className="text-[10px] font-semibold text-[#9BACA4] uppercase tracking-wide">חברה</span>
+                    <span className="text-base text-[#666666] dark:text-[#9BACA4] leading-tight">{Company}</span>
+                  </div>
                 )}
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {EventType && (
-                    <span className="bg-[#9BACA4]/15 text-[#6c8579] text-sm px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap">
-                      {EventType}
-                    </span>
-                  )}
                   {Budget && (
                     <span className="bg-[#C5A880]/15 text-[#C5A880] text-sm px-3 py-1.5 rounded-lg font-bold whitespace-nowrap">
                       ₪{Number(Budget).toLocaleString()}
@@ -385,7 +395,7 @@ const ContactCard = ({ data, onDelete }) => {
                 </div>
               </div>
             </div>
-            <div className="flex gap-1 ml-[-0.5rem] mt-[-0.5rem]">
+            <div className="flex gap-1">
               <button
                 disabled={isDeleting}
                 onClick={handleDelete}
@@ -418,24 +428,40 @@ const ContactCard = ({ data, onDelete }) => {
             </div>
           </div>
           
-        <div className="flex flex-col gap-3 text-base text-[#666666]">
-            {EventDate && (
-              <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-[#C5A880]" />
-                {/* Fallback to EventDate string if raw formats are funky */}
-                <span>{EventDate}</span>
-              </div>
-            )}
+        <div className="flex flex-col gap-2 text-base text-[#666666]">
             {Phone && (
-              <div className="flex items-center gap-2">
-                <PhoneIcon size={18} className="text-[#C5A880]" />
-                <span>{Phone}</span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold text-[#9BACA4] uppercase tracking-wide">טלפון</span>
+                <div className="flex items-center gap-2">
+                  <PhoneIcon size={16} className="text-[#C5A880]" />
+                  <span>{Phone}</span>
+                </div>
               </div>
             )}
             {Email && (
-              <div className="flex items-center gap-2 break-all">
-                <Mail size={18} className="text-[#C5A880]" />
-                <span>{Email}</span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold text-[#9BACA4] uppercase tracking-wide">דוא"ל</span>
+                <div className="flex items-center gap-2 break-all">
+                  <Mail size={16} className="text-[#C5A880]" />
+                  <span>{Email}</span>
+                </div>
+              </div>
+            )}
+            {EventDate && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold text-[#9BACA4] uppercase tracking-wide">תאריך אירוע</span>
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-[#C5A880]" />
+                  <span>{EventDate}</span>
+                  <button
+                    onClick={handleAddToCalendar}
+                    className="mr-1 flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-all active:scale-95"
+                    title="הוסף ליומן גוגל"
+                  >
+                    <CalendarPlus size={11} />
+                    יומן
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -615,6 +641,38 @@ const ContactCard = ({ data, onDelete }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quote Sent Toggle */}
+      <div className="mt-3 pt-3 border-t border-[#EAE3D9]/60 flex items-center justify-between">
+        <span className="text-[10px] font-semibold text-[#9BACA4]">הצעת מחיר</span>
+        <button
+          onClick={handleToggleQuote}
+          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-all active:scale-95 ${
+            quoteSent
+              ? 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
+              : 'bg-white text-[#9BACA4] border-[#EAE3D9] hover:border-purple-300 hover:text-purple-600'
+          }`}
+        >
+          {quoteSent ? '✓ נשלחה הצעת מחיר' : '+ סמן כנשלח'}
+        </button>
+      </div>
+
+      {onStatusChange && (
+        <div className="mt-3 pt-3 border-t border-[#EAE3D9]/60 flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[#9BACA4] whitespace-nowrap">העבר ל:</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {STATUSES.filter(s => s.id !== Status).map(s => (
+              <button
+                key={s.id}
+                onClick={(e) => { e.stopPropagation(); onStatusChange(id, s.id); }}
+                className={`text-xs font-bold px-3 py-1 rounded-full border transition-all active:scale-95 ${s.color}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 pt-4 border-t border-[#EAE3D9]/60 relative">
         {showTemplates && (

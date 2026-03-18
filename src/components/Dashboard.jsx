@@ -53,7 +53,7 @@ const Dashboard = () => {
   }, [darkMode]);
 
   // Filter State
-  const [filters, setFilters] = useState({ status: '', priority: '', eventType: '' });
+  const [filters, setFilters] = useState({ status: '', eventType: '', quoteSent: '' });
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -161,11 +161,19 @@ const Dashboard = () => {
   };
 
   const exportToCSV = () => {
-    if (inquiries.length === 0) { toast.error('אין נתונים לייצוא'); return; }
-    const headers = ['שם הלקוח', 'טלפון', 'דוא"ל', 'סוג אירוע', 'תאריך', 'סטטוס', 'הערות'];
+    const q = debouncedSearch.toLowerCase();
+    const toExport = inquiries.filter(i => {
+      if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
+      if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
+      if (filters.quoteSent && !i['Quote Sent']) return false;
+      if (!q) return true;
+      return [i.Name, i.Company, i.Phone, i['Event Type']].filter(Boolean).some(v => v.toLowerCase().includes(q));
+    });
+    if (toExport.length === 0) { toast.error('אין נתונים לייצוא'); return; }
+    const headers = ['שם הלקוח', 'חברה', 'טלפון', 'דוא"ל', 'סוג אירוע', 'תאריך', 'סטטוס', 'נשלח הצ"מ', 'הערות'];
     const csvRows = ['\uFEFF' + headers.join(',')];
-    inquiries.forEach(row => {
-      const values = [row.Name || '', row.Phone || '', row.Email || '', row['Event Type'] || '', row['Event Date'] || '', row.Status || 'פניות חדשות', (row.Notes || '').replace(/\n/g, ' ')];
+    toExport.forEach(row => {
+      const values = [row.Name || '', row.Company || '', row.Phone || '', row.Email || '', row['Event Type'] || '', row['Event Date'] || '', row.Status || 'פניות חדשות', row['Quote Sent'] ? 'כן' : 'לא', (row.Notes || '').replace(/\n/g, ' ')];
       csvRows.push(values.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -415,122 +423,16 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* ── Mobile: Client List ── */}
-        {!loading && (
-          <div className="md:hidden flex flex-col gap-3 pb-2">
-            {/* Stats strip */}
-            <div className="flex gap-3">
-              <div className="flex-1 bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] text-center shadow-sm">
-                <p className="text-2xl font-bold text-[#333333] dark:text-[#e8e4df]">{newLeadsCount}</p>
-                <p className="text-[11px] text-[#9BACA4] font-semibold mt-0.5">פניות חדשות</p>
-              </div>
-              <div className="flex-1 bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] text-center shadow-sm">
-                <p className="text-2xl font-bold text-[#C5A880]">{conversionRate}%</p>
-                <p className="text-[11px] text-[#9BACA4] font-semibold mt-0.5">סגירה</p>
-              </div>
-              <div className="flex-1 bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] text-center shadow-sm">
-                <p className="text-2xl font-bold text-[#333333] dark:text-[#e8e4df]">{totalLeads}</p>
-                <p className="text-[11px] text-[#9BACA4] font-semibold mt-0.5">סה"כ</p>
-              </div>
-            </div>
-
-            {/* All clients sorted: new → in-progress → closed */}
-            {(() => {
-              const STATUS_ORDER = { 'פניות חדשות': 0, 'בטיפול': 1, 'סגור': 2 };
-              const STATUS_STYLE = {
-                'פניות חדשות': 'bg-blue-50 text-blue-600 border-blue-100',
-                'בטיפול':      'bg-amber-50 text-amber-600 border-amber-100',
-                'סגור':        'bg-green-50 text-green-700 border-green-100',
-              };
-              const q = debouncedSearch.toLowerCase();
-              const list = inquiries
-                .filter(i => {
-                  if (focusMode) {
-                    const isNew = i.Status === 'פניות חדשות' || !i.Status;
-                    const hasUpcoming = i._rawDate && (new Date(i._rawDate) - new Date()) / (1000 * 60 * 60 * 24) <= 3;
-                    if (!isNew && !hasUpcoming) return false;
-                  }
-                  if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
-                  if (filters.priority && i.Priority !== filters.priority) return false;
-                  if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
-                  if (!q) return true;
-                  return [i.Name, i.Company, i.Phone, i['Event Type']].filter(Boolean).some(v => v.toLowerCase().includes(q));
-                })
-                .sort((a, b) => (STATUS_ORDER[a.Status || 'פניות חדשות'] || 0) - (STATUS_ORDER[b.Status || 'פניות חדשות'] || 0));
-
-              if (list.length === 0) return (
-                <div className="bg-white dark:bg-[#1a1917] rounded-2xl p-6 border border-[#EAE3D9] dark:border-[#2d2b28] text-center text-[#9BACA4] text-sm">
-                  {searchQuery ? 'לא נמצאו תוצאות' : 'אין לקוחות עדיין'}
-                </div>
-              );
-
-              return list.map((lead, idx) => {
-                const status = lead.Status || 'פניות חדשות';
-                const name = lead.Company || lead.Name || 'ללא שם';
-                return (
-                  <motion.div
-                    key={lead.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.04, type: 'spring', stiffness: 320, damping: 30 }}
-                    className="bg-white dark:bg-[#1a1917] rounded-2xl px-4 py-3 border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm flex items-center gap-3"
-                  >
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#EAE3D9] to-[#C5A880] flex items-center justify-center text-white font-bold text-base flex-shrink-0">
-                      {name.charAt(0).toUpperCase()}
-                    </div>
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#333333] dark:text-[#e8e4df] truncate text-base leading-tight">{name}</p>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLE[status]}`}>{status}</span>
-                        {lead['Event Type'] && <span className="text-[11px] text-[#6c8579] bg-[#9BACA4]/10 px-2 py-0.5 rounded-full">{lead['Event Type']}</span>}
-                      </div>
-                      {lead['Event Date'] && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Calendar size={11} className="text-[#C5A880]" />
-                          <span className="text-[11px] text-[#9BACA4]">{lead['Event Date']}</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Actions */}
-                    <div className="flex gap-2 flex-shrink-0">
-                      {lead.Phone && (
-                        <a href={`tel:${lead.Phone}`} onClick={e => e.stopPropagation()}
-                          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#F5F2EB] dark:bg-[#252320] text-[#9BACA4] hover:text-[#C5A880] transition-colors">
-                          <PhoneIcon size={16} />
-                        </a>
-                      )}
-                      {lead.Phone && (
-                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleQuickWhatsApp(lead)}
-                          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-sm">
-                          <MessageCircle size={16} />
-                        </motion.button>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              });
-            })()}
-          </div>
-        )}
-
-        {/* ── Kanban Board (desktop only) ── */}
-        <div className="hidden md:flex flex-1 min-h-[420px] overflow-x-auto">
+        {/* ── Kanban Board (tabs — all screens) ── */}
+        <div className="flex flex-col w-full flex-1 min-h-[500px]">
           {loading ? (
-            <div className="flex gap-5 h-full w-full overflow-hidden">
-              {[1,2,3].map(i => (
-                <div key={i} className="min-w-[320px] w-[320px] flex-shrink-0 rounded-[24px] border border-[#EAE3D9]/60 flex flex-col p-5 gap-4"
-                  style={{ background: 'rgba(245,242,235,0.4)' }}>
-                  <div className="h-5 w-28 skeleton-shimmer rounded-full" />
-                  <div className="h-4 w-10 skeleton-shimmer rounded-full" />
-                  <div className="space-y-3">
-                    <div className="h-32 skeleton-shimmer rounded-2xl" />
-                    <div className="h-24 skeleton-shimmer rounded-2xl" />
-                    <div className="h-20 skeleton-shimmer rounded-2xl" />
-                  </div>
-                </div>
-              ))}
+            <div className="w-full flex flex-col gap-3">
+              <div className="h-14 skeleton-shimmer rounded-2xl" />
+              <div className="space-y-3">
+                <div className="h-40 skeleton-shimmer rounded-2xl" />
+                <div className="h-32 skeleton-shimmer rounded-2xl" />
+                <div className="h-28 skeleton-shimmer rounded-2xl" />
+              </div>
             </div>
           ) : (
             <KanbanBoard
@@ -543,6 +445,7 @@ const Dashboard = () => {
                 if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
                 if (filters.priority && i.Priority !== filters.priority) return false;
                 if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
+                if (filters.quoteSent && !i['Quote Sent']) return false;
                 if (!debouncedSearch) return true;
                 const q = debouncedSearch.toLowerCase();
                 return i.Name?.toLowerCase().includes(q) || i.Company?.toLowerCase().includes(q) || i.Phone?.includes(q) || i['Event Type']?.toLowerCase().includes(q);
