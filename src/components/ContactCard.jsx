@@ -11,7 +11,7 @@ const STATUSES = [
   { id: 'סגור',        label: 'סגור', color: 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' },
 ];
 
-const ContactCard = ({ data, onDelete, onStatusChange }) => {
+const ContactCard = ({ data, onDelete, onStatusChange, onUpdate }) => {
   const { settings } = useSettings();
   const PRIORITY_CONFIG = Object.fromEntries(
     settings.priorities.map(p => [p.id, { bg: p.bg, text: p.text, border: p.border, emoji: p.emoji }])
@@ -63,7 +63,7 @@ const ContactCard = ({ data, onDelete, onStatusChange }) => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const fileInputRef = useRef(null);
@@ -100,7 +100,11 @@ const ContactCard = ({ data, onDelete, onStatusChange }) => {
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    if (onDelete) onDelete(id, localData);
+    if (onDelete) {
+      setIsDeleting(true);
+      onDelete(id, localData);
+      // Note: isDeleting stays true intentionally — the component will unmount after deletion
+    }
   };
 
   const handleToggleQuote = async (e) => {
@@ -171,8 +175,8 @@ const ContactCard = ({ data, onDelete, onStatusChange }) => {
   const handleSaveNote = async (e) => {
     e.stopPropagation();
     
-    // If the input is empty or unchanged from the last state, just close it
-    if (!editedNote.trim() || editedNote === Notes) {
+    // If the input is empty, just close it
+    if (!editedNote.trim()) {
       setIsEditingNote(false);
       return;
     }
@@ -237,12 +241,15 @@ const ContactCard = ({ data, onDelete, onStatusChange }) => {
     if (success) {
       toast.success('פרטי לקוח עודכנו בהצלחה!');
       setIsEditingCard(false);
-      setLocalData(prev => ({
-        ...prev,
+      const updatedData = {
+        ...localData,
         ...payload,
         ['Event Date']: parsedDisplayDate,
         _rawDate: editForm['Event Date']
-      }));
+      };
+      setLocalData(updatedData);
+      // Notify parent so the table row updates immediately without a full refresh
+      if (onUpdate) onUpdate(id, updatedData);
     } else {
       toast.error('שגיאה בעדכון הלקוח');
     }
@@ -664,7 +671,7 @@ const ContactCard = ({ data, onDelete, onStatusChange }) => {
             {STATUSES.filter(s => s.id !== Status).map(s => (
               <button
                 key={s.id}
-                onClick={(e) => { e.stopPropagation(); onStatusChange(id, s.id); }}
+                onClick={(e) => { e.stopPropagation(); setLocalData(prev => ({ ...prev, Status: s.id })); onStatusChange(id, s.id); }}
                 className={`text-xs font-bold px-3 py-1 rounded-full border transition-all active:scale-95 ${s.color}`}
               >
                 {s.label}

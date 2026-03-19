@@ -1,7 +1,36 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Phone as PhoneIcon, Mail, Calendar, X, Bell } from 'lucide-react';
+import { MessageCircle, Phone as PhoneIcon, Mail, Calendar, X, Bell, CalendarPlus } from 'lucide-react';
 import ContactCard from './ContactCard';
+
+const openGoogleCalendar = (e, lead) => {
+  e.stopPropagation();
+  const rawDate = lead._rawDate || lead['Event Date'];
+  if (!rawDate) return;
+  let d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+    d = new Date(rawDate);
+  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawDate)) {
+    const [day, month, year] = rawDate.split('/');
+    d = new Date(`${year}-${month}-${day}`);
+  } else {
+    d = new Date(rawDate);
+  }
+  if (isNaN(d.getTime())) return;
+  const fmt = (n) => String(n).padStart(2, '0');
+  const dateStr = `${d.getFullYear()}${fmt(d.getMonth() + 1)}${fmt(d.getDate())}`;
+  const title = encodeURIComponent(`אירוע - ${lead.Name || lead.Company || 'לקוח'}`);
+  const details = encodeURIComponent([
+    lead.Name    ? `שם: ${lead.Name}` : '',
+    lead.Company ? `חברה: ${lead.Company}` : '',
+    lead.Phone   ? `טלפון: ${lead.Phone}` : '',
+    lead.Budget  ? `תקציב: ₪${Number(lead.Budget).toLocaleString()}` : '',
+  ].filter(Boolean).join('\n'));
+  window.open(
+    `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}&details=${details}`,
+    '_blank'
+  );
+};
 
 const MOVE_BUTTONS = {
   'פניות חדשות': [
@@ -18,7 +47,7 @@ const MOVE_BUTTONS = {
   ],
 };
 
-const LeadTable = ({ inquiries, onDelete, onStatusChange }) => {
+const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
   const [selectedLead, setSelectedLead] = useState(null);
   const [reminders, setReminders] = useState({});
 
@@ -34,6 +63,12 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange }) => {
   };
 
   useEffect(() => { refreshReminders(); }, [inquiries]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When a card is edited inside the modal, update selectedLead so the open modal shows fresh data
+  const handleUpdate = (id, updatedData) => {
+    setSelectedLead(updatedData);
+    if (onUpdate) onUpdate(id, updatedData);
+  };
 
   const openWhatsApp = (e, lead) => {
     e.stopPropagation();
@@ -184,6 +219,19 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange }) => {
                         <Mail size={13} />
                       </a>
                     )}
+                    {(lead._rawDate || lead['Event Date']) && (
+                      <button
+                        onClick={(e) => openGoogleCalendar(e, lead)}
+                        title="הוסף ליומן גוגל"
+                        className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors shadow-sm ${
+                          lead.Status === 'סגור'
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200'
+                        }`}
+                      >
+                        <CalendarPlus size={13} />
+                      </button>
+                    )}
                     {onStatusChange && (MOVE_BUTTONS[lead.Status || 'פניות חדשות'] || []).map(btn => (
                       <button
                         key={btn.id}
@@ -245,6 +293,7 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange }) => {
                     setSelectedLead(null);
                   }}
                   onStatusChange={onStatusChange}
+                  onUpdate={handleUpdate}
                 />
               </div>
             </motion.div>

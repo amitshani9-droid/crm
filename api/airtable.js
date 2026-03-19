@@ -22,28 +22,28 @@ export default async function handler(req, res) {
 
   try {
     switch (method) {
-      case 'GET':
+      case 'GET': {
         const records = await base(TABLE_NAME).select().all();
         return res.status(200).json(records.map(r => ({ id: r.id, createdTime: r._rawJson.createdTime, ...r.fields })));
-
-      case 'POST':
+      }
+      case 'POST': {
         // Handle both single and batch creation
         const toCreate = Array.isArray(body) ? body : [body];
         const created = await base(TABLE_NAME).create(toCreate);
         return res.status(200).json(created);
-
-      case 'PATCH':
+      }
+      case 'PATCH': {
         // Handle both single and batch updates
         const toUpdate = Array.isArray(body) ? body : [body];
         const updated = await base(TABLE_NAME).update(toUpdate);
         return res.status(200).json(updated);
-
-      case 'DELETE':
+      }
+      case 'DELETE': {
         const { id } = query;
         if (!id) return res.status(400).json({ error: 'Record ID missing' });
         await base(TABLE_NAME).destroy(id);
         return res.status(200).json({ success: true });
-
+      }
       default:
         res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
         return res.status(405).end(`Method ${method} Not Allowed`);

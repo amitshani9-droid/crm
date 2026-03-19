@@ -123,6 +123,11 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
     };
   }, []);
 
+  // Called when card details are edited inside the ContactCard modal
+  const handleUpdateRecord = useCallback((recordId, updatedData) => {
+    setInquiries(prev => prev.map(inq => inq.id === recordId ? updatedData : inq));
+  }, [setInquiries]);
+
   const activeColumn = columns.find(c => c.id === activeTab);
 
   return (
@@ -164,6 +169,7 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
           inquiries={columnMap[activeTab] || []}
           onDropRecord={handleDropRecord}
           onDeleteRecord={handleDeleteRecord}
+          onUpdateRecord={handleUpdateRecord}
           fullWidth
         />
       </div>
