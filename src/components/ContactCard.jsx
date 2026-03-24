@@ -13,8 +13,9 @@ const STATUSES = [
 
 const ContactCard = ({ data, onDelete, onStatusChange, onUpdate }) => {
   const { settings } = useSettings();
-  const PRIORITY_CONFIG = Object.fromEntries(
-    settings.priorities.map(p => [p.id, { bg: p.bg, text: p.text, border: p.border, emoji: p.emoji }])
+  const PRIORITY_CONFIG = useMemo(() =>
+    Object.fromEntries(settings.priorities.map(p => [p.id, { bg: p.bg, text: p.text, border: p.border, emoji: p.emoji }])),
+    [settings.priorities]
   );
   const [localData, setLocalData] = useState(data);
   const { 

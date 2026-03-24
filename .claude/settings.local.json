@@ -10,7 +10,9 @@
       "Bash(cat \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\\\\.gitignore\")",
       "Bash(type 'C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\\\\.gitignore')",
       "Bash(find \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\" -type f -name \"*.json\" -o -name \"*.js\" -o -name \"*.jsx\")",
-      "Bash(find \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\" -type f \\\\\\( -name \"*.html\" -o -name \".env*\" \\\\\\))"
+      "Bash(find \"C:\\\\Users\\\\amits\\\\OneDrive\\\\שולחן העבודה\\\\‏‏תיקיה חדשה \\(4\\)\" -type f \\\\\\( -name \"*.html\" -o -name \".env*\" \\\\\\))",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Link as LinkIcon, Search, Eye, EyeOff, RotateCw, FileDown, Database, HelpCircle, MessageCircle, Phone as PhoneIcon, Moon, Sun, Settings, Calendar } from 'lucide-react';
+import { Plus, Link as LinkIcon, Search, Eye, EyeOff, RotateCw, FileDown, Database, HelpCircle, Moon, Sun, Settings } from 'lucide-react';
 import { fetchAirtableRecords, createAirtableRecord, isValidIsraeliPhone } from '../airtable';
 import KanbanBoard from './KanbanBoard';
 import { Toaster, toast } from 'react-hot-toast';
@@ -53,7 +53,7 @@ const Dashboard = () => {
   }, [darkMode]);
 
   // Filter State
-  const [filters, setFilters] = useState({ status: '', eventType: '', quoteSent: '' });
+  const [filters, setFilters] = useState({ status: '', eventType: '', quoteSent: '', priority: '' });
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -114,7 +114,7 @@ const Dashboard = () => {
     const interval = setInterval(async () => {
       try {
         const data = await fetchAirtableRecords();
-        if (data.length > 0) setInquiries(data);
+        setInquiries(data);
       } catch {
         // Silent fail — user can manually refresh
       }
@@ -213,6 +213,25 @@ const Dashboard = () => {
   const animEvents = useAnimatedNumber(loading ? 0 : eventsNext7DaysCount);
   const animConversion = useAnimatedNumber(loading ? 0 : conversionRate);
 
+  const filteredInquiries = useMemo(() =>
+    inquiries.filter(i => {
+      if (focusMode) {
+        const isNew = i.Status === 'פניות חדשות' || !i.Status;
+        const now = new Date();
+        const hasUpcoming = i._rawDate && (new Date(i._rawDate) - now) / (1000 * 60 * 60 * 24) <= 3;
+        if (!isNew && !hasUpcoming) return false;
+      }
+      if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
+      if (filters.priority && i.Priority !== filters.priority) return false;
+      if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
+      if (filters.quoteSent && !i['Quote Sent']) return false;
+      if (!debouncedSearch) return true;
+      const q = debouncedSearch.toLowerCase();
+      return i.Name?.toLowerCase().includes(q) || i.Company?.toLowerCase().includes(q) || i.Phone?.includes(q) || i['Event Type']?.toLowerCase().includes(q);
+    }),
+    [inquiries, focusMode, filters, debouncedSearch]
+  );
+
   const handleQuickWhatsApp = (lead) => {
     if (!lead.Phone) { toast.error('חסר מספר טלפון'); return; }
     const cleanPhone = lead.Phone.replace(/\D/g, '');
@@ -227,25 +246,25 @@ const Dashboard = () => {
       <header className="glass-header hidden md:flex items-center justify-between px-6 py-4 gap-6">
         {/* Brand */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="w-10 h-10 bg-gradient-to-br from-[#333333] to-[#1a1a1a] rounded-xl flex items-center justify-center text-[#C5A880] font-bold text-base shadow-lg shadow-black/20 border border-white/10">
+          <div className="w-10 h-10 bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] rounded-[14px] flex items-center justify-center text-[#C5A880] font-bold text-base shadow-lg shadow-black/20 border border-white/5">
             TS
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[#333333] leading-tight tracking-tight">
+            <h1 className="text-lg font-bold text-[#18181A] dark:text-[#EFEFEF] leading-tight tracking-tight">
               טל שני <span className="font-light text-[#C5A880]">| CRM</span>
             </h1>
-            <p className="text-[#9BACA4] text-xs font-medium">הפקת אירועים בסטנדרט אחר</p>
+            <p className="text-[#9BACA4] dark:text-[#6b7c77] text-xs font-medium">הפקת אירועים בסטנדרט אחר</p>
           </div>
         </div>
 
         {/* Search */}
         <div className="flex-1 max-w-[380px] relative">
           <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
-            <Search className="h-4.5 w-4.5 text-[#9BACA4]" size={18} />
+            <Search className="h-4.5 w-4.5 text-[#9BACA4] dark:text-[#6b7c77]" size={18} />
           </div>
           <input
             type="text"
-            className="w-full pl-4 pr-10 py-2.5 bg-white/70 border border-[#EAE3D9] rounded-xl text-sm text-[#333333] placeholder-[#9BACA4] focus:outline-none focus:border-[#C5A880] focus:ring-2 focus:ring-[#C5A880]/10 focus:bg-white transition-all"
+            className="w-full pl-4 pr-10 py-2.5 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-[14px] text-sm text-[#18181A] dark:text-white placeholder-[#9BACA4] dark:placeholder-[#6b7c77] focus:outline-none focus:border-[#C5A880] focus:ring-2 focus:ring-[#C5A880]/20 focus:bg-white dark:focus:bg-[#121212] transition-all"
             placeholder="חיפוש לקוח, חברה, טלפון..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -258,14 +277,14 @@ const Dashboard = () => {
             { onClick: handleRefresh, disabled: refreshing, icon: <RotateCw size={17} className={`text-[#C5A880] ${refreshing ? 'animate-spin' : ''}`} />, label: 'רענן' },
             { onClick: exportToCSV, icon: <FileDown size={17} className="text-[#C5A880]" />, label: 'ייצוא' },
             { onClick: () => navigate('/import'), icon: <Database size={17} className="text-[#C5A880]" />, label: 'ייבוא' },
-            { onClick: shareJoinLink, icon: <LinkIcon size={17} className="text-[#666666]" />, label: 'טופס חיצוני' },
+            { onClick: shareJoinLink, icon: <LinkIcon size={17} className="text-[#666666] dark:text-[#9BACA4]" />, label: 'טופס חיצוני' },
           ].map((btn, i) => (
             <motion.button
               key={i}
               onClick={btn.onClick}
               disabled={btn.disabled}
               {...btnMotion}
-              className="flex items-center gap-1.5 bg-white dark:bg-[#1a1917] text-[#666666] dark:text-[#9BACA4] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-white dark:bg-[#121212] text-[#666666] dark:text-[#9BACA4] px-3.5 py-2.5 rounded-[14px] text-sm font-semibold border border-black/5 dark:border-white/5 shadow-sm disabled:opacity-50"
             >
               {btn.icon}
               <span className="hidden lg:inline">{btn.label}</span>
@@ -276,16 +295,16 @@ const Dashboard = () => {
             id="focus-mode-btn"
             onClick={() => setFocusMode(!focusMode)}
             {...btnMotion}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold border shadow-sm transition-colors ${focusMode ? 'bg-[#333333] text-[#C5A880] border-[#333333]' : 'bg-white text-[#666666] border-[#EAE3D9]'}`}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-[14px] text-sm font-semibold border shadow-sm transition-colors ${focusMode ? 'bg-[#18181A] dark:bg-white text-[#C5A880] border-[#18181A] dark:border-white' : 'bg-white dark:bg-[#121212] text-[#666666] dark:text-[#9BACA4] border-black/5 dark:border-white/5'}`}
           >
-            {focusMode ? <EyeOff size={17} /> : <Eye size={17} className="text-[#C5A880]" />}
+            {focusMode ? <EyeOff size={17} className={darkMode ? 'text-[#121212]' : ''} /> : <Eye size={17} className="text-[#C5A880]" />}
             <span className="hidden lg:inline">{focusMode ? 'בטל פוקוס' : 'פוקוס'}</span>
           </motion.button>
 
           <motion.button
             onClick={() => setDarkMode(d => !d)}
             {...btnMotion}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold border shadow-sm transition-colors ${darkMode ? 'bg-[#1a1917] text-[#C5A880] border-[#2d2b28]' : 'bg-white text-[#666666] border-[#EAE3D9]'}`}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-[14px] text-sm font-semibold border shadow-sm transition-colors ${darkMode ? 'bg-[#121212] text-[#C5A880] border-white/5' : 'bg-white text-[#666666] border-black/5'}`}
             title={darkMode ? 'מצב בהיר' : 'מצב כהה'}
           >
             {darkMode ? <Sun size={17} /> : <Moon size={17} />}
@@ -294,7 +313,7 @@ const Dashboard = () => {
           <motion.button
             onClick={() => setShowHelpSidebar(true)}
             {...btnMotion}
-            className="flex items-center gap-1.5 bg-[#F0F8F9] text-[#2C8A99] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#2C8A99]/20 shadow-sm dark:bg-[#0d2a2f] dark:border-[#2C8A99]/30"
+            className="flex items-center gap-1.5 bg-[#F0F8F9] text-[#2C8A99] px-3.5 py-2.5 rounded-[14px] text-sm font-semibold border border-[#2C8A99]/20 shadow-sm dark:bg-[#07171A] dark:border-[#2C8A99]/20"
           >
             <HelpCircle size={17} strokeWidth={2.5} />
             <span className="hidden lg:inline">עזרה</span>
@@ -303,7 +322,7 @@ const Dashboard = () => {
           <motion.button
             onClick={() => navigate('/settings')}
             {...btnMotion}
-            className="flex items-center gap-1.5 bg-white text-[#666666] px-3.5 py-2.5 rounded-xl text-sm font-semibold border border-[#EAE3D9] shadow-sm dark:bg-[#1a1917] dark:border-[#2d2b28]"
+            className="flex items-center gap-1.5 bg-white text-[#666666] px-3.5 py-2.5 rounded-[14px] text-sm font-semibold border border-black/5 shadow-sm dark:bg-[#121212] dark:border-white/5 dark:text-[#EFEFEF]"
           >
             <Settings size={17} className="text-[#C5A880]" />
             <span className="hidden lg:inline">הגדרות</span>
@@ -357,12 +376,10 @@ const Dashboard = () => {
         <div className="hidden md:flex justify-between items-center">
           <motion.button
             onClick={() => setShowAddModal(true)}
-            whileHover={{ scale: 1.02, y: -2, boxShadow: '0 16px 32px rgba(197,168,128,0.35)' }}
             whileTap={{ scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
-            className="flex items-center gap-2 bg-gradient-to-r from-[#C5A880] to-[#b09673] text-white px-6 py-3.5 rounded-2xl text-base font-bold shadow-[0_8px_20px_rgba(197,168,128,0.25)] border border-[#C5A880]/40"
+            className="flex items-center gap-2 btn-primary-gold px-6 py-3.5 rounded-2xl text-base font-bold border border-white/10"
           >
-            <Plus size={20} strokeWidth={2.5} />
+            <Plus size={20} strokeWidth={2.5} color="#402D0F" />
             <span>הוספת לקוח חדש</span>
           </motion.button>
         </div>
@@ -375,15 +392,15 @@ const Dashboard = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="flex items-center gap-3 px-5 py-3 rounded-2xl shrink-0"
+              className="flex items-center gap-3 px-5 py-3 rounded-3xl shrink-0"
               style={{
-                background: 'linear-gradient(135deg, #FEF9EC, #FEF3C7)',
-                border: '1px solid #FDE68A',
-                boxShadow: '0 2px 12px rgba(251,191,36,0.12)'
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05))',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                boxShadow: '0 4px 20px rgba(245, 158, 11, 0.08)'
               }}
             >
-              <span className="text-xl">⚡</span>
-              <span className="text-amber-800 text-sm font-semibold">
+              <span className="text-xl drop-shadow-md">⚡</span>
+              <span className="text-[#C5A880] dark:text-[#E2C399] text-sm font-semibold">
                 יש לך {upcomingEvents.length} אירוע{upcomingEvents.length > 1 ? 'ים' : ''} ב-3 הימים הקרובים:&nbsp;
                 <span className="font-bold">{upcomingEvents.map(e => e.Company || e.Name).join(', ')}</span>
               </span>
@@ -436,35 +453,20 @@ const Dashboard = () => {
             </div>
           ) : (
             <KanbanBoard
-              inquiries={inquiries.filter(i => {
-                if (focusMode) {
-                  const isNew = i.Status === 'פניות חדשות' || !i.Status;
-                  const hasUpcoming = i._rawDate && (new Date(i._rawDate) - new Date()) / (1000 * 60 * 60 * 24) <= 3;
-                  if (!isNew && !hasUpcoming) return false;
-                }
-                if (filters.status && (i.Status || 'פניות חדשות') !== filters.status) return false;
-                if (filters.priority && i.Priority !== filters.priority) return false;
-                if (filters.eventType && i['Event Type'] !== filters.eventType) return false;
-                if (filters.quoteSent && !i['Quote Sent']) return false;
-                if (!debouncedSearch) return true;
-                const q = debouncedSearch.toLowerCase();
-                return i.Name?.toLowerCase().includes(q) || i.Company?.toLowerCase().includes(q) || i.Phone?.includes(q) || i['Event Type']?.toLowerCase().includes(q);
-              })}
+              inquiries={filteredInquiries}
               setInquiries={setInquiries}
             />
           )}
         </div>
       </main>
 
-      {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-5 left-4 right-4 z-40">
         <motion.button
           onClick={() => setShowAddModal(true)}
-          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          className="w-full flex justify-center items-center gap-2 bg-[#333333] text-[#C5A880] py-4 rounded-2xl text-base font-bold shadow-[0_8px_24px_rgba(0,0,0,0.22)] border border-[#444]"
+          className="w-full flex justify-center items-center gap-2 btn-primary-gold py-4 rounded-2xl text-base font-bold border border-white/10"
         >
-          <Plus size={22} />
+          <Plus size={22} color="#402D0F" />
           <span>הוספת לקוח חדש</span>
         </motion.button>
       </div>

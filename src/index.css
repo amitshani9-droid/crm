@@ -5,15 +5,15 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --color-background: #FDFBF7;
-  --color-foreground: #333333;
+  --color-background: #FDFCF9;
+  --color-foreground: #18181A;
   --color-card: #FFFFFF;
-  --color-card-foreground: #333333;
+  --color-card-foreground: #18181A;
   --color-primary: #C5A880;
   --color-primary-foreground: #FFFFFF;
   --color-secondary: #9BACA4;
   --color-secondary-foreground: #FFFFFF;
-  --color-border: #EAE3D9;
+  --color-border: #E5E5E5;
   --color-gold-glow: rgba(197, 168, 128, 0.15);
 
   --radius-lg: 16px;
@@ -22,12 +22,12 @@
 
 /* Dark mode CSS variable overrides */
 html.dark {
-  --color-background: #0f0e0d;
-  --color-foreground: #e8e4df;
-  --color-card: #1a1917;
-  --color-card-foreground: #e8e4df;
-  --color-border: #2d2b28;
-  --color-gold-glow: rgba(197, 168, 128, 0.08);
+  --color-background: #080808;
+  --color-foreground: #EFEFEF;
+  --color-card: #121212;
+  --color-card-foreground: #EFEFEF;
+  --color-border: #222222;
+  --color-gold-glow: rgba(197, 168, 128, 0.2);
 }
 
 @layer base {
@@ -53,13 +53,13 @@ html.dark {
   .glass-header {
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(253, 251, 247, 0.88) 100%
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(253, 252, 249, 0.6) 100%
     );
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid rgba(197, 168, 128, 0.15);
-    box-shadow: 0 1px 0 rgba(197, 168, 128, 0.08), 0 4px 24px rgba(0,0,0,0.03);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.02);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -68,11 +68,13 @@ html.dark {
   html.dark .glass-header {
     background: linear-gradient(
       135deg,
-      rgba(26, 25, 23, 0.95) 0%,
-      rgba(18, 17, 15, 0.92) 100%
+      rgba(15, 15, 15, 0.65) 0%,
+      rgba(8, 8, 8, 0.55) 100%
     );
-    border-bottom-color: rgba(197, 168, 128, 0.08);
-    box-shadow: 0 1px 0 rgba(197, 168, 128, 0.05), 0 4px 24px rgba(0,0,0,0.3);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 40px rgba(0,0,0,0.6);
   }
 
   /* Premium card glow on hover */
@@ -163,15 +165,25 @@ html.dark {
   /* Ambient background glow */
   .ambient-bg {
     background:
-      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(197, 168, 128, 0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 40% 30% at 20% 80%, rgba(155, 172, 164, 0.05) 0%, transparent 60%),
-      #FDFBF7;
+      radial-gradient(120% 100% at 50% -20%, rgba(197, 168, 128, 0.08), transparent),
+      var(--color-background);
   }
 
   html.dark .ambient-bg {
     background:
-      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(197, 168, 128, 0.03) 0%, transparent 60%),
-      radial-gradient(ellipse 40% 30% at 20% 80%, rgba(155, 172, 164, 0.02) 0%, transparent 60%),
-      #0f0e0d;
+      radial-gradient(120% 100% at 50% -20%, rgba(197, 168, 128, 0.07), transparent),
+      var(--color-background);
+  }
+
+  .btn-primary-gold {
+    background: linear-gradient(135deg, #E2C399 0%, #C5A880 100%);
+    color: #402D0F;
+    box-shadow: 0 8px 16px -4px rgba(197, 168, 128, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-primary-gold:hover {
+    box-shadow: 0 12px 24px -4px rgba(197, 168, 128, 0.35);
+    opacity: 0.95;
+    transform: translateY(-1px);
   }
 }

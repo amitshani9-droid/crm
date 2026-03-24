@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Phone as PhoneIcon, Mail, Calendar, X, Bell, CalendarPlus } from 'lucide-react';
 import ContactCard from './ContactCard';
@@ -49,9 +49,8 @@ const MOVE_BUTTONS = {
 
 const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
   const [selectedLead, setSelectedLead] = useState(null);
-  const [reminders, setReminders] = useState({});
 
-  const refreshReminders = () => {
+  const reminders = useMemo(() => {
     const map = {};
     for (const lead of inquiries) {
       try {
@@ -59,10 +58,8 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
         if (r?.text) map[lead.id] = r;
       } catch {}
     }
-    setReminders(map);
-  };
-
-  useEffect(() => { refreshReminders(); }, [inquiries]); // eslint-disable-line react-hooks/exhaustive-deps
+    return map;
+  }, [inquiries]);
 
   // When a card is edited inside the modal, update selectedLead so the open modal shows fresh data
   const handleUpdate = (id, updatedData) => {
@@ -90,10 +87,10 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
   return (
     <>
       {/* Table */}
-      <div className="w-full overflow-x-auto rounded-2xl border border-[#EAE3D9] dark:border-[#2d2b28] bg-white/60 dark:bg-[#1a1917]/60">
+      <div className="w-full overflow-x-auto rounded-2xl border border-[#EAE3D9] dark:border-white/5 shadow-sm bg-white/60 dark:bg-[#1c1b1b]/80 backdrop-blur-md">
         <table className="w-full text-right" dir="rtl">
           <thead>
-            <tr className="border-b border-[#EAE3D9] dark:border-[#2d2b28] bg-[#FDFBF7] dark:bg-[#141311]">
+            <tr className="border-b border-[#EAE3D9] dark:border-white/5 bg-[#FDFBF7] dark:bg-[#131313]">
               <th className="px-4 py-3 text-[11px] font-bold text-[#9BACA4] uppercase tracking-wide">שם</th>
               <th className="px-4 py-3 text-[11px] font-bold text-[#9BACA4] uppercase tracking-wide hidden sm:table-cell">חברה</th>
               <th className="px-4 py-3 text-[11px] font-bold text-[#9BACA4] uppercase tracking-wide">טלפון</th>
@@ -111,10 +108,10 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.03, type: 'spring', stiffness: 400, damping: 30 }}
                 onClick={() => setSelectedLead(lead)}
-                className={`border-b border-[#EAE3D9]/50 dark:border-[#2d2b28]/50 cursor-pointer transition-colors group ${
+                className={`border-b border-[#EAE3D9]/50 dark:border-white/5 cursor-pointer transition-colors group ${
                   reminders[lead.id]
                     ? 'bg-amber-50/60 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20'
-                    : 'hover:bg-[#F5F2EB]/60 dark:hover:bg-[#1e1c1a]/60'
+                    : 'hover:bg-[#F5F2EB]/60 dark:hover:bg-[#20201f]/80'
                 }`}
               >
                 {/* Name */}
@@ -258,7 +255,7 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setSelectedLead(null); refreshReminders(); }}
+              onClick={() => { setSelectedLead(null); }}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
             />
 
@@ -277,7 +274,7 @@ const LeadTable = ({ inquiries, onDelete, onStatusChange, onUpdate }) => {
                   {selectedLead.Name || selectedLead.Company || 'פרטי לקוח'}
                 </span>
                 <button
-                  onClick={() => { setSelectedLead(null); refreshReminders(); }}
+                  onClick={() => { setSelectedLead(null); }}
                   className="p-1.5 rounded-full text-[#9BACA4] hover:text-[#333] hover:bg-[#EAE3D9] transition-colors"
                 >
                   <X size={18} />

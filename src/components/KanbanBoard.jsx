@@ -13,6 +13,8 @@ const TAB_STYLES = {
 const KanbanBoard = ({ inquiries, setInquiries }) => {
   const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState('פניות חדשות');
+  const inquiriesRef = useRef(inquiries);
+  useEffect(() => { inquiriesRef.current = inquiries; }, [inquiries]);
 
   const columns = useMemo(() => [
     { id: 'פניות חדשות', title: settings.kanbanLabels['פניות חדשות'] },
@@ -30,8 +32,9 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
   }, [inquiries]);
 
   const handleDropRecord = useCallback(async (recordId, newStatusId) => {
-    const recordToUpdate = inquiries.find(inq => inq.id === recordId);
-    if (!recordToUpdate || recordToUpdate.Status === newStatusId) return;
+    const recordToUpdate = inquiriesRef.current.find(inq => inq.id === recordId);
+    const currentStatus = recordToUpdate?.Status || 'פניות חדשות';
+    if (!recordToUpdate || currentStatus === newStatusId) return;
 
     const previousStatus = recordToUpdate.Status;
 
@@ -48,7 +51,7 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
     } else {
       toast.success('הסטטוס עודכן בהצלחה! ✨');
     }
-  }, [inquiries, setInquiries]);
+  }, [setInquiries]);
 
   const deletionTimers = useRef({});
 
@@ -133,7 +136,7 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
   return (
     <div className="flex flex-col w-full gap-3">
       {/* Tab Bar */}
-      <div className="flex gap-1.5 bg-white/60 dark:bg-[#1a1917]/60 border border-[#EAE3D9] dark:border-[#2d2b28] rounded-2xl p-1.5 flex-shrink-0">
+      <div className="flex gap-1.5 bg-white/50 dark:bg-[#121212]/80 backdrop-blur-xl border border-black/5 dark:border-white/5 shadow-sm rounded-3xl p-1.5 flex-shrink-0">
         {columns.map(col => {
           const isActive = activeTab === col.id;
           const style = TAB_STYLES[col.id];
@@ -142,16 +145,16 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
             <button
               key={col.id}
               onClick={() => setActiveTab(col.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-[20px] text-sm font-bold transition-all ${
                 isActive
-                  ? 'bg-white dark:bg-[#252320] shadow-sm text-[#333333] dark:text-[#e8e4df]'
-                  : 'text-[#9BACA4] hover:text-[#666666]'
+                  ? 'bg-white dark:bg-[#1A1A1A] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[#18181A] dark:text-white border border-black/5 dark:border-white/5'
+                  : 'text-[#9BACA4] hover:text-[#18181A] dark:hover:text-white'
               }`}
             >
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${style.dot}`} />
               <span className="truncate">{col.title}</span>
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                isActive ? style.countActive : 'bg-[#EAE3D9]/60 text-[#9BACA4]'
+                isActive ? style.countActive : 'bg-black/5 dark:bg-white/5 text-[#9BACA4]'
               }`}>
                 {count}
               </span>

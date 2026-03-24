@@ -5,13 +5,13 @@ import { Users, Briefcase, CalendarDays, TrendingUp, BarChart3 } from 'lucide-re
 // Premium stat card icon wrapper
 const StatIcon = ({ children, color = '#C5A880' }) => (
   <div
-    className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 relative"
+    className="w-12 h-12 rounded-[18px] flex items-center justify-center flex-shrink-0 relative overflow-hidden"
     style={{
-      background: `linear-gradient(135deg, ${color}18, ${color}08)`,
-      boxShadow: `0 0 0 1px ${color}20, 0 2px 8px ${color}12`
+      background: `linear-gradient(135deg, ${color}1A, ${color}0D)`,
+      boxShadow: `inset 0 1px 0 ${color}26, 0 2px 8px ${color}12`
     }}
   >
-    <div style={{ color }}>{children}</div>
+    <div style={{ color }} className="relative z-10">{children}</div>
   </div>
 );
 
@@ -50,8 +50,8 @@ const StatsGrid = ({ loading, stats }) => {
       >
         {/* New Leads */}
         <motion.div variants={statCardVariants}
-          whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(197,168,128,0.14)', borderColor: 'rgba(197,168,128,0.35)' }}
-          className="bg-white dark:bg-[#1a1917] rounded-[20px] p-5 border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm flex items-center gap-4 cursor-default"
+          whileHover={{ y: -4, boxShadow: '0 20px 40px -8px rgba(197,168,128,0.15)', borderColor: 'rgba(197,168,128,0.4)' }}
+          className="bg-white/70 dark:bg-[#121212]/80 backdrop-blur-xl rounded-3xl p-5 border border-black/5 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center gap-4 transition-colors"
         >
           <StatIcon><Users size={22} /></StatIcon>
           <div>
@@ -64,8 +64,8 @@ const StatsGrid = ({ loading, stats }) => {
 
         {/* In Progress */}
         <motion.div variants={statCardVariants}
-          whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(155,172,164,0.14)', borderColor: 'rgba(155,172,164,0.35)' }}
-          className="bg-white dark:bg-[#1a1917] rounded-[20px] p-5 border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm flex items-center gap-4 cursor-default"
+          whileHover={{ y: -4, boxShadow: '0 20px 40px -8px rgba(155,172,164,0.15)', borderColor: 'rgba(155,172,164,0.4)' }}
+          className="bg-white/70 dark:bg-[#121212]/80 backdrop-blur-xl rounded-3xl p-5 border border-black/5 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center gap-4 transition-colors"
         >
           <StatIcon color="#9BACA4"><Briefcase size={22} /></StatIcon>
           <div>
@@ -78,8 +78,8 @@ const StatsGrid = ({ loading, stats }) => {
 
         {/* Events This Week */}
         <motion.div variants={statCardVariants}
-          whileHover={{ y: -3, boxShadow: '0 12px 28px rgba(44,138,153,0.12)', borderColor: 'rgba(44,138,153,0.3)' }}
-          className="bg-white dark:bg-[#1a1917] rounded-[20px] p-5 border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm flex items-center gap-4 cursor-default"
+          whileHover={{ y: -4, boxShadow: '0 20px 40px -8px rgba(44,138,153,0.15)', borderColor: 'rgba(44,138,153,0.4)' }}
+          className="bg-white/70 dark:bg-[#121212]/80 backdrop-blur-xl rounded-3xl p-5 border border-black/5 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center gap-4 transition-colors"
         >
           <StatIcon color="#2C8A99"><CalendarDays size={22} /></StatIcon>
           <div>
@@ -92,12 +92,12 @@ const StatsGrid = ({ loading, stats }) => {
 
         {/* Conversion Rate */}
         <motion.div variants={statCardVariants}
-          whileHover={{ y: -3, boxShadow: '0 20px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(197,168,128,0.3)' }}
-          className="rounded-[20px] p-5 border border-[#3a3a3a] shadow-lg flex items-center justify-between relative overflow-hidden cursor-default"
-          style={{ background: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)' }}
+          whileHover={{ y: -4, boxShadow: '0 24px 48px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(197,168,128,0.4)' }}
+          className="rounded-3xl p-5 border border-[#333333] shadow-2xl flex items-center justify-between relative overflow-hidden transition-all"
+          style={{ background: 'linear-gradient(135deg, #1A1A1A 0%, #0A0A0A 100%)' }}
         >
           <div className="absolute inset-0 pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 80% 60% at 20% 100%, rgba(197,168,128,0.18), transparent)'
+            background: 'radial-gradient(ellipse 100% 100% at 20% 100%, rgba(197,168,128,0.15), transparent)'
           }} />
           <div className="relative z-10">
             <p className="text-[10px] font-bold text-[#C5A880] uppercase tracking-widest mb-1">יחס המרה</p>
@@ -110,9 +110,9 @@ const StatsGrid = ({ loading, stats }) => {
               )}
             <p className="text-[#9BACA4] text-xs mt-1 font-medium">{closedCount} סגורים מתוך {totalLeads}</p>
           </div>
-          <div className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center text-[#C5A880]"
-            style={{ background: 'rgba(197,168,128,0.1)', border: '1px solid rgba(197,168,128,0.2)' }}>
-            <TrendingUp size={26} />
+          <div className="relative z-10 w-14 h-14 rounded-[18px] flex items-center justify-center text-[#C5A880] shadow-inner"
+            style={{ background: 'linear-gradient(135deg, rgba(197,168,128,0.15), rgba(197,168,128,0.05))', border: '1px solid rgba(197,168,128,0.2)' }}>
+            <TrendingUp size={26} strokeWidth={2.5} />
           </div>
         </motion.div>
       </motion.div>
@@ -124,7 +124,7 @@ const StatsGrid = ({ loading, stats }) => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="bg-white dark:bg-[#1a1917] rounded-[16px] p-4 border border-[#EAE3D9] dark:border-[#2d2b28] shadow-sm flex flex-col gap-2"
+            className="bg-white/70 dark:bg-[#121212]/80 backdrop-blur-xl rounded-3xl p-5 border border-black/5 dark:border-white/5 shadow-[0_4px_24px_rgb(0,0,0,0.02)] flex flex-col gap-3"
           >
             <div className="flex justify-between text-xs font-semibold text-[#9BACA4] px-0.5">
               <span>התפלגות פניות</span>
