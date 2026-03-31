@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Calendar, MessageSquare, Phone, Mail, User, Info, Briefcase } from 'lucide-react';
+import { CheckCircle, Calendar, MessageSquare, Phone, Mail, User, Info, Briefcase, ArrowRight } from 'lucide-react';
 import { createAirtableRecord, isValidIsraeliPhone } from '../airtable';
 import { useSettings } from '../hooks/useSettings';
 import { toast, Toaster } from 'react-hot-toast';
@@ -61,37 +61,23 @@ const JoinPage = () => {
     }
   };
 
-  // Luxury aesthetic container variants
   const containerVariants = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, scale: 0.98 },
     visible: { 
       opacity: 1, 
-      y: 0,
-      transition: { 
-        duration: 0.8, 
-        ease: [0.22, 1, 0.36, 1], // Custom elegant easing
-        staggerChildren: 0.1
-      }
+      scale: 1,
+      transition: { duration: 0.6, ease: "easeOut", staggerChildren: 0.1 }
     }
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.5, ease: "easeOut" }
-    }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#FAF9F6] flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden" dir="rtl" style={{ fontFamily: "'Heebo', sans-serif" }}>
       <Toaster position="top-center" toastOptions={{ duration: 4000, style: { fontFamily: 'Heebo, sans-serif', fontSize: '15px', fontWeight: '600' } }} />
-      
-      {/* Subtle luxury background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#C777B1]/5 via-[#FDFBF7] to-[#C777B1]/5 pointer-events-none" />
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-[#C777B1]/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#C777B1]/5 blur-[100px] pointer-events-none" />
 
       <AnimatePresence mode="wait">
         {!isSuccess ? (
@@ -101,56 +87,38 @@ const JoinPage = () => {
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.4 } }}
-            className="w-full max-w-4xl flex flex-col items-center z-10 my-8"
-            style={{ fontFamily: "'Heebo', sans-serif" }}
+            className="w-full max-w-[550px] z-10 my-4"
           >
-            {/* Logo */}
-            <motion.div variants={itemVariants} className="mb-8">
-               <img src="/logo.png" alt="Tal Shani Logo" className="h-28 object-contain" onError={(e) => e.target.style.display='none'} />
-            </motion.div>
+            {/* The White Card Container */}
+            <div className="bg-white rounded-[24px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] p-8 md:p-10 w-full relative">
+              
+              {/* Logo */}
+              <motion.div variants={itemVariants} className="flex justify-center mb-6">
+                 <img src="/logo.png" alt="Tal Shani Logo" className="h-20 object-contain" onError={(e) => e.target.style.display='none'} />
+              </motion.div>
 
-            {/* Hero Text */}
-            <motion.div variants={itemVariants} className="text-center md:w-3/4 mb-10 space-y-4">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-[#C777B1]">טל שני - חוויה אירגונית עם ערך</h1>
-              <p className="text-xl md:text-2xl font-medium text-[#C777B1]">
-                ימי גיבוש ואירועי חברה מבוססי ערכים – שמחברים בין העובדים לתרבות הארגונית ומשאירים חותם אמיתי.
-              </p>
-            </motion.div>
+              {/* Header inside the card */}
+              <motion.div variants={itemVariants} className="text-center mb-10">
+                <h2 className="text-3xl font-bold text-[#C777B1] mb-3">בואו ניצור חוויה משמעותית יחד</h2>
+                <p className="text-sm text-[#4A5568] leading-relaxed px-2">
+                  הופכים ערכים לחוויה חיה ונושמת. השאירו פרטים ונחזור אליכם לתכנון האירוע המדויק שלכם.
+                </p>
+              </motion.div>
 
-            {/* About Text */}
-            <motion.div variants={itemVariants} className="text-center md:w-2/3 mb-12 text-[#666666] text-lg leading-relaxed">
-              אני יוצרת חוויות לארגונים שמחפשים הרבה יותר מעוד 'יום כיף'. אני מאמינה שזו ההזדמנות שלכם לקחת ערכים כמו מנהיגות, חדשנות או קהילה – ולהפוך אותם ממילים יפות במצגת לחוויה חיה ונושמת. כל אירוע שאני מפיקה מתחיל בשאלה אחת פשוטה: איזה ערך הארגון רוצה לחזק היום? מתוך התשובה הזו, אני תופרת עבורכם חוויה שלמה בהתאמה אישית – מפעילות השטח, דרך הסדנאות ועד לתוכן המדויק. כך יום הגיבוש מחזק את המחוייבות, מייצר משמעות אמיתית – ובדרך, כמובן, מהנה, מגבש ועושה טוב.
-            </motion.div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Honeypot */}
+                <div style={{ display: 'none' }} aria-hidden="true">
+                  <input type="text" name="website" value={honeypot} onChange={e => setHoneypot(e.target.value)} tabIndex={-1} autoComplete="off" />
+                </div>
 
-            {/* The Glassmorphism Form Card */}
-            <div className="w-full bg-white/90 backdrop-blur-md rounded-3xl border border-white/50 shadow-xl overflow-hidden mt-4">
-
-              {/* Form Content */}
-              <div className="p-8 md:p-10">
-                <motion.div variants={itemVariants} className="mb-8 text-center">
-                  <p className="text-[#666666]">מלאו את הפרטים ונחזור אליכם בהקדם.</p>
-                </motion.div>
-
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Honeypot: hidden from real users, bots fill it automatically */}
-                  <div style={{ display: 'none' }} aria-hidden="true">
-                    <input
-                      type="text"
-                      name="website"
-                      value={honeypot}
-                      onChange={e => setHoneypot(e.target.value)}
-                      tabIndex={-1}
-                      autoComplete="off"
-                    />
-                  </div>
-                  
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Name field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5 md:col-span-1">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
+                  <div className="space-y-1.5 md:col-span-1">
+                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
                        שם איש קשר <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <User size={18} />
                       </div>
                       <input
@@ -159,19 +127,19 @@ const JoinPage = () => {
                         name="Name"
                         value={formData.Name}
                         onChange={handleChange}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all placeholder:text-[#CBD5E0]"
                         placeholder="ישראל ישראלי"
                       />
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Company field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5 md:col-span-1">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
+                  <div className="space-y-1.5 md:col-span-1">
+                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
                        שם החברה (אופציונלי)
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <Briefcase size={18} />
                       </div>
                       <input
@@ -179,19 +147,19 @@ const JoinPage = () => {
                         name="Company"
                         value={formData.Company}
                         onChange={handleChange}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all placeholder:text-[#CBD5E0]"
                         placeholder="שם העסק / חברה"
                       />
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Phone field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
                        טלפון נייד <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <Phone size={18} />
                       </div>
                       <input
@@ -201,19 +169,19 @@ const JoinPage = () => {
                         value={formData.Phone}
                         onChange={handleChange}
                         dir="ltr"
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all text-right"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all text-right placeholder:text-[#CBD5E0]"
                         placeholder="05X-XXXXXXX"
                       />
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Email field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
                       דוא"ל 
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <Mail size={18} />
                       </div>
                       <input
@@ -222,19 +190,19 @@ const JoinPage = () => {
                         value={formData.Email}
                         onChange={handleChange}
                         dir="ltr"
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all text-right"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all text-right placeholder:text-[#CBD5E0]"
                         placeholder="example@mail.com"
                       />
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Event Type field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
                       סוג האירוע <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <Info size={18} />
                       </div>
                       <select
@@ -242,7 +210,7 @@ const JoinPage = () => {
                         name="Event Type"
                         value={formData['Event Type']}
                         onChange={handleChange}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all appearance-none"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all appearance-none placeholder:text-[#CBD5E0]"
                       >
                         <option value="" disabled>בחרו סוג אירוע...</option>
                         {settings.eventTypes.map(type => (
@@ -250,15 +218,15 @@ const JoinPage = () => {
                         ))}
                       </select>
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Event Date field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
                       תאריך משוער
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <Calendar size={18} />
                       </div>
                       <input
@@ -267,49 +235,69 @@ const JoinPage = () => {
                         value={formData['Event Date']}
                         onChange={handleChange}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all"
                       />
                     </div>
-                  </motion.div>
+                  </div>
+                </div>
 
-                  {/* Notes field */}
-                  <motion.div variants={itemVariants} className="space-y-1.5 md:col-span-2">
-                    <label className="text-sm font-semibold text-[#C777B1] flex items-center gap-2">
-                      הערות / בקשות מיוחדות
-                    </label>
-                    <div className="relative">
-                      <div className="absolute top-3 right-0 pr-3 flex items-start pointer-events-none text-[#9BACA4]">
-                        <MessageSquare size={18} />
-                      </div>
-                      <textarea
-                        name="Notes"
-                        value={formData.Notes}
-                        onChange={handleChange}
-                        rows={3}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all resize-none"
-                        placeholder="ספרו לנו כל דבר שחשוב שנדע..."
-                      />
+                {/* Notes field */}
+                <div className="space-y-1.5 mt-2">
+                  <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                    הערות / בקשות מיוחדות
+                  </label>
+                  <div className="relative">
+                    <div className="absolute top-4 right-0 pr-4 flex items-start pointer-events-none text-[#A0AEC0]">
+                      <MessageSquare size={18} />
                     </div>
-                  </motion.div>
+                    <textarea
+                      name="Notes"
+                      value={formData.Notes}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all resize-none placeholder:text-[#CBD5E0]"
+                      placeholder="ספרו לנו כל דבר שחשוב שנדע..."
+                    />
+                  </div>
+                </div>
 
-                  {/* Submit Button */}
-                  <motion.div variants={itemVariants} className="md:col-span-2 mt-6">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-[#C777B1] hover:bg-[#C777B1] hover:shadow-[0_4px_15px_rgba(199,119,177,0.4)] text-white font-bold text-xl py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_0_rgba(199,119,177,0.39)] hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
-                    >
-                      {isSubmitting ? (
-                         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        "שלח פנייה"
-                      )}
-                    </button>
-                  </motion.div>
+                {/* Submit Button */}
+                <div className="mt-8 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-[#C777B1] hover:bg-[#B0609C] text-white font-bold text-lg py-4 rounded-full transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_10px_20px_rgba(199,119,177,0.3)] disabled:opacity-70 disabled:hover:scale-100 disabled:shadow-none flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                       <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      "בואי נתחיל"
+                    )}
+                  </button>
+                </div>
 
-                </form>
-              </div>
+              </form>
             </div>
+
+            {/* Footer Links */}
+            <motion.div variants={itemVariants} className="mt-6 flex flex-col md:flex-row items-center justify-center gap-6 text-[#A0AEC0] text-sm font-medium">
+              <a 
+                href="https://wondrous-druid-2df08e.netlify.app/#" 
+                className="flex items-center gap-2 hover:text-[#C777B1] transition-colors opacity-80 hover:opacity-100"
+              >
+                <ArrowRight size={16} />
+                <span>חזרה לאתר של טל</span>
+              </a>
+              <a 
+                href="https://wa.me/" 
+                target="_blank" rel="noreferrer"
+                className="flex items-center gap-2 hover:text-[#25D366] transition-colors opacity-80 hover:opacity-100"
+              >
+                <MessageSquare size={16} />
+                <span>כיתבו לי בוואטסאפ</span>
+              </a>
+            </motion.div>
+
           </motion.div>
         ) : (
           /* Success Screen */
@@ -318,22 +306,29 @@ const JoinPage = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="bg-white/90 backdrop-blur-xl p-10 rounded-[24px] border border-[#EAE3D9] shadow-xl text-center max-w-md w-full z-10"
+            className="bg-white p-12 rounded-[24px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] text-center max-w-[550px] w-full z-10"
             style={{ fontFamily: "'Heebo', sans-serif" }}
           >
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 20 }}
-              className="w-20 h-20 bg-[#C777B1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#C777B1]"
+              className="w-24 h-24 bg-[#C777B1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#C777B1]"
             >
-              <CheckCircle size={40} />
+              <CheckCircle size={48} />
             </motion.div>
             
-            <h2 className="text-3xl font-bold text-[#C777B1] mb-3">תודה!</h2>
-            <p className="text-[#666666] text-lg leading-relaxed">
-              הפנייה התקבלה בהצלחה! טל תחזור אליכם בהקדם עם הצעה מותאמת.
+            <h2 className="text-3xl font-bold text-[#C777B1] mb-4">תודה!</h2>
+            <p className="text-[#4A5568] text-lg leading-relaxed">
+              הפנייה התקבלה בהצלחה! טל תחזור אליכם בהקדם לתכנון האירוע המושלם.
             </p>
+            
+            <a 
+              href="https://wondrous-druid-2df08e.netlify.app/#" 
+              className="mt-8 inline-block text-[#C777B1] font-semibold hover:underline"
+            >
+              חזרה לאתר הראשי
+            </a>
           </motion.div>
         )}
       </AnimatePresence>
