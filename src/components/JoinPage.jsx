@@ -89,9 +89,9 @@ const JoinPage = () => {
       <Toaster position="top-center" toastOptions={{ duration: 4000, style: { fontFamily: 'Heebo, sans-serif', fontSize: '15px', fontWeight: '600' } }} />
       
       {/* Subtle luxury background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#C777B1]/10 via-[#FDFBF7] to-[#C777B1]/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#C777B1]/5 via-[#FDFBF7] to-[#C777B1]/5 pointer-events-none" />
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-[#C777B1]/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#C777B1]/10 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#C777B1]/5 blur-[100px] pointer-events-none" />
 
       <AnimatePresence mode="wait">
         {!isSuccess ? (
@@ -118,18 +118,18 @@ const JoinPage = () => {
             </motion.div>
 
             {/* About Text */}
-            <motion.div variants={itemVariants} className="text-center md:w-2/3 mb-12 text-[#C777B1] opacity-90 text-lg leading-relaxed">
+            <motion.div variants={itemVariants} className="text-center md:w-2/3 mb-12 text-[#666666] text-lg leading-relaxed">
               אני יוצרת חוויות לארגונים שמחפשים הרבה יותר מעוד 'יום כיף'. אני מאמינה שזו ההזדמנות שלכם לקחת ערכים כמו מנהיגות, חדשנות או קהילה – ולהפוך אותם ממילים יפות במצגת לחוויה חיה ונושמת. כל אירוע שאני מפיקה מתחיל בשאלה אחת פשוטה: איזה ערך הארגון רוצה לחזק היום? מתוך התשובה הזו, אני תופרת עבורכם חוויה שלמה בהתאמה אישית – מפעילות השטח, דרך הסדנאות ועד לתוכן המדויק. כך יום הגיבוש מחזק את המחוייבות, מייצר משמעות אמיתית – ובדרך, כמובן, מהנה, מגבש ועושה טוב.
             </motion.div>
 
             {/* The Glassmorphism Form Card */}
-            <div className="w-full bg-white/90 backdrop-blur-md rounded-3xl border border-[#C777B1]/20 shadow-xl overflow-hidden mt-4">
+            <div className="w-full bg-white/90 backdrop-blur-md rounded-3xl border border-white/50 shadow-xl overflow-hidden mt-4">
 
               {/* Form Content */}
               <div className="p-8 md:p-10">
                 <motion.div variants={itemVariants} className="mb-8 text-center">
                   <h2 className="text-2xl font-bold text-[#C777B1] mb-2">בואו ניצור את הקסם יחד</h2>
-                  <p className="text-[#C777B1] opacity-80">מלאו את הפרטים ונחזור אליכם בהקדם.</p>
+                  <p className="text-[#666666]">מלאו את הפרטים ונחזור אליכם בהקדם.</p>
                 </motion.div>
 
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -151,7 +151,7 @@ const JoinPage = () => {
                        שם איש קשר <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
                         <User size={18} />
                       </div>
                       <input
@@ -160,7 +160,7 @@ const JoinPage = () => {
                         name="Name"
                         value={formData.Name}
                         onChange={handleChange}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all placeholder:text-[#C777B1]/40"
+                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all"
                         placeholder="ישראל ישראלי"
                       />
                     </div>
@@ -172,7 +172,7 @@ const JoinPage = () => {
                        שם החברה (אופציונלי)
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
                         <Briefcase size={18} />
                       </div>
                       <input
@@ -180,7 +180,7 @@ const JoinPage = () => {
                         name="Company"
                         value={formData.Company}
                         onChange={handleChange}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all placeholder:text-[#C777B1]/40"
+                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all"
                         placeholder="שם העסק / חברה"
                       />
                     </div>
@@ -192,7 +192,7 @@ const JoinPage = () => {
                        טלפון נייד <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
                         <Phone size={18} />
                       </div>
                       <input
@@ -202,7 +202,7 @@ const JoinPage = () => {
                         value={formData.Phone}
                         onChange={handleChange}
                         dir="ltr"
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all text-right placeholder:text-[#C777B1]/40"
+                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all text-right"
                         placeholder="05X-XXXXXXX"
                       />
                     </div>
@@ -214,7 +214,7 @@ const JoinPage = () => {
                       דוא"ל 
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
                         <Mail size={18} />
                       </div>
                       <input
@@ -223,7 +223,7 @@ const JoinPage = () => {
                         value={formData.Email}
                         onChange={handleChange}
                         dir="ltr"
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all text-right placeholder:text-[#C777B1]/40"
+                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all text-right"
                         placeholder="example@mail.com"
                       />
                     </div>
@@ -235,7 +235,7 @@ const JoinPage = () => {
                       סוג האירוע <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
                         <Info size={18} />
                       </div>
                       <select
@@ -243,7 +243,7 @@ const JoinPage = () => {
                         name="Event Type"
                         value={formData['Event Type']}
                         onChange={handleChange}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all appearance-none placeholder:text-[#C777B1]/40"
+                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all appearance-none"
                       >
                         <option value="" disabled>בחרו סוג אירוע...</option>
                         {settings.eventTypes.map(type => (
@@ -259,7 +259,7 @@ const JoinPage = () => {
                       תאריך משוער
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#9BACA4]">
                         <Calendar size={18} />
                       </div>
                       <input
@@ -279,7 +279,7 @@ const JoinPage = () => {
                       הערות / בקשות מיוחדות
                     </label>
                     <div className="relative">
-                      <div className="absolute top-3 right-0 pr-3 flex items-start pointer-events-none text-[#C777B1]/60">
+                      <div className="absolute top-3 right-0 pr-3 flex items-start pointer-events-none text-[#9BACA4]">
                         <MessageSquare size={18} />
                       </div>
                       <textarea
@@ -287,7 +287,7 @@ const JoinPage = () => {
                         value={formData.Notes}
                         onChange={handleChange}
                         rows={3}
-                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all resize-none placeholder:text-[#C777B1]/40"
+                        className="w-full bg-[#FDFBF7] border border-[#EAE3D9] rounded-xl py-3 pl-4 pr-10 text-[#C777B1] focus:ring-2 focus:ring-[#C777B1]/40 focus:border-[#C777B1] outline-none transition-all resize-none"
                         placeholder="ספרו לנו כל דבר שחשוב שנדע..."
                       />
                     </div>
@@ -298,7 +298,7 @@ const JoinPage = () => {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-[#C777B1] hover:bg-[#B0609C] hover:shadow-[0_4px_15px_rgba(199,119,177,0.4)] text-white font-bold text-xl py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_0_rgba(199,119,177,0.39)] hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
+                      className="w-full bg-[#C777B1] hover:bg-[#C777B1] hover:shadow-[0_4px_15px_rgba(199,119,177,0.4)] text-white font-bold text-xl py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_0_rgba(199,119,177,0.39)] hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -332,7 +332,7 @@ const JoinPage = () => {
             </motion.div>
             
             <h2 className="text-3xl font-bold text-[#C777B1] mb-3">תודה!</h2>
-            <p className="text-[#C777B1] text-lg leading-relaxed">
+            <p className="text-[#666666] text-lg leading-relaxed">
               הפנייה התקבלה בהצלחה! טל תחזור אליכם בהקדם עם הצעה מותאמת.
             </p>
           </motion.div>
