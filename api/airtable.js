@@ -42,7 +42,12 @@ function checkSecret(provided) {
 
 export default async function handler(req, res) {
   if (!AIRTABLE_PAT || !BASE_ID || !INTERNAL_SECRET) {
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ 
+      error: 'Missing Server Configuration', 
+      PAT: !!AIRTABLE_PAT, 
+      BASE: !!BASE_ID, 
+      SECRET: !!INTERNAL_SECRET 
+    });
   }
 
   if (!checkSecret(req.headers['x-internal-secret'])) {
@@ -86,6 +91,6 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Airtable API Proxy Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: error.message || error.toString() });
   }
 }
