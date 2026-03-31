@@ -37,13 +37,14 @@ const ContactCard = ({ data, onDelete, onStatusChange, onUpdate }) => {
   const Priority = localData?.Priority;
   const quoteSent = localData?.['Quote Sent'] || false;
 
-  // Calculate "Waiting" status: > 7 days in "בטיפול" 
+  // Calculate "Waiting" status: > 7 days since status changed to "בטיפול"
   const isWaiting = useMemo(() => {
-    if (Status !== 'בטיפול' || !createdTime) return false;
-    const created = new Date(createdTime);
-    const diffDays = (new Date() - created) / (1000 * 60 * 60 * 24);
+    if (Status !== 'בטיפול') return false;
+    const changedAt = localStorage.getItem(`crm_status_changed_${id}`);
+    if (!changedAt) return false;
+    const diffDays = (Date.now() - Number(changedAt)) / (1000 * 60 * 60 * 24);
     return diffDays > 7;
-  }, [Status, createdTime]);
+  }, [Status, id]);
 
   const [localAttachments, setLocalAttachments] = useState(Attachments);
   const [isEditingNote, setIsEditingNote] = useState(false);

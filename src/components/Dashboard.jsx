@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Link as LinkIcon, Search, Eye, EyeOff, RotateCw, FileDown, Database, HelpCircle, Moon, Sun, Settings } from 'lucide-react';
 import { fetchAirtableRecords, createAirtableRecord, isValidIsraeliPhone } from '../airtable';
@@ -39,6 +39,7 @@ const Dashboard = () => {
   
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const fetchCounterRef = useRef(0);
 
   // Help & Tour State
   const [showHelpSidebar, setShowHelpSidebar] = useState(false);
@@ -101,20 +102,24 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    const fetchId = ++fetchCounterRef.current;
     const loadData = async () => {
       setLoading(true);
       const data = await fetchAirtableRecords();
-      setInquiries(data);
-      setLoading(false);
+      if (fetchId === fetchCounterRef.current) {
+        setInquiries(data);
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
 
   useEffect(() => {
     const interval = setInterval(async () => {
+      const fetchId = ++fetchCounterRef.current;
       try {
         const data = await fetchAirtableRecords();
-        setInquiries(data);
+        if (fetchId === fetchCounterRef.current) setInquiries(data);
       } catch {
         // Silent fail — user can manually refresh
       }
@@ -123,11 +128,14 @@ const Dashboard = () => {
   }, []);
 
   const handleRefresh = async () => {
+    const fetchId = ++fetchCounterRef.current;
     setRefreshing(true);
     try {
       const data = await fetchAirtableRecords();
-      setInquiries(data);
-      toast.success('הנתונים רועננו בהצלחה! 🔄');
+      if (fetchId === fetchCounterRef.current) {
+        setInquiries(data);
+        toast.success('הנתונים רועננו בהצלחה! 🔄');
+      }
     } catch {
       toast.error('שגיאה ברענון הנתונים');
     } finally {

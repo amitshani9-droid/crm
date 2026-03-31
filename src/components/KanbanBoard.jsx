@@ -49,6 +49,11 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
       ));
       toast.error('שגיאה בעדכון הסטטוס');
     } else {
+      if (newStatusId === 'בטיפול') {
+        localStorage.setItem(`crm_status_changed_${recordId}`, Date.now().toString());
+      } else {
+        localStorage.removeItem(`crm_status_changed_${recordId}`);
+      }
       toast.success('הסטטוס עודכן בהצלחה! ✨');
     }
   }, [setInquiries]);
@@ -56,11 +61,8 @@ const KanbanBoard = ({ inquiries, setInquiries }) => {
   const deletionTimers = useRef({});
 
   const handleDeleteRecord = useCallback((recordId, recordData) => {
-    let originalIndex;
-    setInquiries(prev => {
-      originalIndex = prev.findIndex(inq => inq.id === recordId);
-      return prev.filter(inq => inq.id !== recordId);
-    });
+    const originalIndex = inquiriesRef.current.findIndex(inq => inq.id === recordId);
+    setInquiries(prev => prev.filter(inq => inq.id !== recordId));
 
     let isUndone = false;
 
