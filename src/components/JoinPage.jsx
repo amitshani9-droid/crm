@@ -128,7 +128,6 @@ const JoinPage = () => {
               {/* Form Content */}
               <div className="p-8 md:p-10">
                 <motion.div variants={itemVariants} className="mb-8 text-center">
-                  <h2 className="text-2xl font-bold text-[#C777B1] mb-2">בואו ניצור את הקסם יחד</h2>
                   <p className="text-[#666666]">מלאו את הפרטים ונחזור אליכם בהקדם.</p>
                 </motion.div>
 
