@@ -289,7 +289,7 @@ const JoinPage = () => {
                 <span>חזרה לאתר של טל</span>
               </a>
               <a 
-                href="https://wa.me/" 
+                href="https://wa.me/972544866372" 
                 target="_blank" rel="noreferrer"
                 className="flex items-center gap-2 hover:text-[#25D366] transition-colors opacity-80 hover:opacity-100"
               >
