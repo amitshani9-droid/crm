@@ -76,7 +76,7 @@ const JoinPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden" dir="rtl" style={{ fontFamily: "'Heebo', sans-serif" }}>
+    <div className="min-h-screen bg-[#F1F3ED] flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden" dir="rtl" style={{ fontFamily: "'Heebo', sans-serif" }}>
       <Toaster position="top-center" toastOptions={{ duration: 4000, style: { fontFamily: 'Heebo, sans-serif', fontSize: '15px', fontWeight: '600' } }} />
 
       <AnimatePresence mode="wait">
@@ -99,8 +99,8 @@ const JoinPage = () => {
 
               {/* Header inside the card */}
               <motion.div variants={itemVariants} className="text-center mb-10">
-                <h2 className="text-3xl font-bold text-[#C777B1] mb-3">בואו ניצור חוויה משמעותית יחד</h2>
-                <p className="text-sm text-[#4A5568] leading-relaxed px-2">
+                <h2 className="text-3xl font-bold text-[#7D8F69] mb-3">בואו ניצור חוויה משמעותית יחד</h2>
+                <p className="text-sm text-[#2C3327] leading-relaxed px-2">
                   הופכים ערכים לחוויה חיה ונושמת. השאירו פרטים ונחזור אליכם לתכנון האירוע המדויק שלכם.
                 </p>
               </motion.div>
@@ -114,7 +114,7 @@ const JoinPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Name field */}
                   <div className="space-y-1.5 md:col-span-1">
-                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                    <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
                        שם איש קשר <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -127,7 +127,7 @@ const JoinPage = () => {
                         name="Name"
                         value={formData.Name}
                         onChange={handleChange}
-                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all placeholder:text-[#CBD5E0]"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all placeholder:text-[#CBD5E0]"
                         placeholder="ישראל ישראלי"
                       />
                     </div>
@@ -135,19 +135,20 @@ const JoinPage = () => {
 
                   {/* Company field */}
                   <div className="space-y-1.5 md:col-span-1">
-                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
-                       שם החברה (אופציונלי)
+                    <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
+                       שם החברה
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#A0AEC0]">
                         <Briefcase size={18} />
                       </div>
                       <input
+                        required
                         type="text"
                         name="Company"
                         value={formData.Company}
                         onChange={handleChange}
-                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all placeholder:text-[#CBD5E0]"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all placeholder:text-[#CBD5E0]"
                         placeholder="שם העסק / חברה"
                       />
                     </div>
@@ -155,7 +156,7 @@ const JoinPage = () => {
 
                   {/* Phone field */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                    <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
                        טלפון נייד <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -169,7 +170,7 @@ const JoinPage = () => {
                         value={formData.Phone}
                         onChange={handleChange}
                         dir="ltr"
-                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all text-right placeholder:text-[#CBD5E0]"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all text-right placeholder:text-[#CBD5E0]"
                         placeholder="05X-XXXXXXX"
                       />
                     </div>
@@ -177,7 +178,7 @@ const JoinPage = () => {
 
                   {/* Email field */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                    <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
                       דוא"ל 
                     </label>
                     <div className="relative">
@@ -190,7 +191,7 @@ const JoinPage = () => {
                         value={formData.Email}
                         onChange={handleChange}
                         dir="ltr"
-                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all text-right placeholder:text-[#CBD5E0]"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all text-right placeholder:text-[#CBD5E0]"
                         placeholder="example@mail.com"
                       />
                     </div>
@@ -198,7 +199,7 @@ const JoinPage = () => {
 
                   {/* Event Type field */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                    <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
                       סוג האירוע <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -210,7 +211,7 @@ const JoinPage = () => {
                         name="Event Type"
                         value={formData['Event Type']}
                         onChange={handleChange}
-                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all appearance-none placeholder:text-[#CBD5E0]"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all appearance-none placeholder:text-[#CBD5E0]"
                       >
                         <option value="" disabled>בחרו סוג אירוע...</option>
                         {settings.eventTypes.map(type => (
@@ -222,7 +223,7 @@ const JoinPage = () => {
 
                   {/* Event Date field */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                    <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
                       תאריך משוער
                     </label>
                     <div className="relative">
@@ -235,7 +236,7 @@ const JoinPage = () => {
                         value={formData['Event Date']}
                         onChange={handleChange}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all"
+                        className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -243,7 +244,7 @@ const JoinPage = () => {
 
                 {/* Notes field */}
                 <div className="space-y-1.5 mt-2">
-                  <label className="text-sm font-semibold text-[#4A5568] flex items-center gap-2">
+                  <label className="text-sm font-semibold text-[#2C3327] flex items-center gap-2">
                     הערות / בקשות מיוחדות
                   </label>
                   <div className="relative">
@@ -255,7 +256,7 @@ const JoinPage = () => {
                       value={formData.Notes}
                       onChange={handleChange}
                       rows={3}
-                      className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2D3748] focus:ring-2 focus:ring-[#C777B1]/20 focus:border-[#C777B1] outline-none transition-all resize-none placeholder:text-[#CBD5E0]"
+                      className="w-full bg-white border border-[#D1D5DB] rounded-[10px] py-3.5 pl-4 pr-11 text-[#2C3327] focus:ring-2 focus:ring-[#7D8F69]/20 focus:border-[#7D8F69] outline-none transition-all resize-none placeholder:text-[#CBD5E0]"
                       placeholder="ספרו לנו כל דבר שחשוב שנדע..."
                     />
                   </div>
@@ -283,7 +284,7 @@ const JoinPage = () => {
             <motion.div variants={itemVariants} className="mt-6 flex flex-col md:flex-row items-center justify-center gap-6 text-[#A0AEC0] text-sm font-medium">
               <a 
                 href="https://wondrous-druid-2df08e.netlify.app/#" 
-                className="flex items-center gap-2 hover:text-[#C777B1] transition-colors opacity-80 hover:opacity-100"
+                className="flex items-center gap-2 hover:text-[#7D8F69] transition-colors opacity-80 hover:opacity-100"
               >
                 <ArrowRight size={16} />
                 <span>חזרה לאתר של טל</span>
@@ -313,19 +314,19 @@ const JoinPage = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 20 }}
-              className="w-24 h-24 bg-[#C777B1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#C777B1]"
+              className="w-24 h-24 bg-[#7D8F69]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#7D8F69]"
             >
               <CheckCircle size={48} />
             </motion.div>
             
-            <h2 className="text-3xl font-bold text-[#C777B1] mb-4">תודה!</h2>
-            <p className="text-[#4A5568] text-lg leading-relaxed">
+            <h2 className="text-3xl font-bold text-[#7D8F69] mb-4">תודה!</h2>
+            <p className="text-[#2C3327] text-lg leading-relaxed">
               הפנייה התקבלה בהצלחה! טל תחזור אליכם בהקדם לתכנון האירוע המושלם.
             </p>
             
             <a 
               href="https://wondrous-druid-2df08e.netlify.app/#" 
-              className="mt-8 inline-block text-[#C777B1] font-semibold hover:underline"
+              className="mt-8 inline-block text-[#7D8F69] font-semibold hover:underline"
             >
               חזרה לאתר הראשי
             </a>
