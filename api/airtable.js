@@ -24,8 +24,9 @@ export function sanitizeFields(fields) {
     } else if (key === 'Attachments') {
       if (Array.isArray(val)) out[key] = val;
     } else if (key === 'Budget' || key === 'Participants') {
+      if (val === '') continue; // skip empty string — Number('') = 0 which is misleading
       const n = Number(val);
-      if (!isNaN(n)) out[key] = n;
+      if (!isNaN(n) && n > 0) out[key] = n;
     } else if (key === 'Event Date' || key === 'Event Type') {
       if (val !== null && val !== undefined && val !== '') out[key] = String(val);
     } else {

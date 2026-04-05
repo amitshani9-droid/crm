@@ -178,10 +178,10 @@ const ImportPage = () => {
         successCount += batchResult.count;
       } else {
         failedCount += batch.length;
-        // DETAILED LOGGING: Show exact row data that failed
         console.error(`=== BATCH FAILED (i=${i}) ===`);
         console.error("The following records caused a 422 or other error:", batch);
-        toast.error(`שגיאה בייבוא שורות ${i+1}-${i + batch.length}. בדקי את הקונסול לפרטים.`);
+        const errMsg = batchResult.errorMessage || 'שגיאה לא ידועה';
+        toast.error(`❌ שגיאת שרת: ${errMsg}`, { duration: 10000 });
       }
 
       setProgress({ current: Math.min(i + BATCH_SIZE, cleanedRecords.length), total: cleanedRecords.length });

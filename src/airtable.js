@@ -36,14 +36,25 @@ function sanitizeFields(fields) {
   if (fields.Status) sanitized.Status = String(fields.Status).trim();
   if (fields.Phone) sanitized.Phone = sanitizePhone(fields.Phone);
   
-  const optionalKeys = ['Company', 'Email', 'Event Type', 'Event Date', 'Notes', 'Budget', 'Participants', 'Priority'];
-  optionalKeys.forEach(key => {
-    if (fields[key] !== undefined) {
-      sanitized[key] = fields[key] ?? '';
+  // Text optional fields — skip null/undefined entirely
+  const textOptionalKeys = ['Company', 'Email', 'Event Type', 'Event Date', 'Notes', 'Priority'];
+  textOptionalKeys.forEach(key => {
+    const val = fields[key];
+    if (val !== undefined && val !== null && val !== '') {
+      sanitized[key] = val;
     }
   });
 
-  if (fields['Quote Sent'] !== undefined) {
+  // Number fields — only include when a real positive number
+  ['Budget', 'Participants'].forEach(key => {
+    const raw = fields[key];
+    if (raw !== null && raw !== undefined && raw !== '') {
+      const n = Number(raw);
+      if (!isNaN(n) && n > 0) sanitized[key] = n;
+    }
+  });
+
+  if (fields['Quote Sent'] !== undefined && fields['Quote Sent'] !== null) {
     sanitized['Quote Sent'] = Boolean(fields['Quote Sent']);
   }
 
@@ -152,7 +163,9 @@ export async function importRecordsBatch(records) {
     });
     const data = await response.json();
     if (!response.ok) {
+      const errDetails = data?.details?.message || data?.details || data?.error || 'Unknown error';
       console.error('Server error response:', JSON.stringify(data, null, 2));
+      return { success: false, count: 0, errorMessage: String(errDetails) };
     }
     return { success: response.ok, count: Array.isArray(data) ? data.length : 0 };
   } catch (err) {
