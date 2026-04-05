@@ -86,4 +86,25 @@ describe('sanitizeFields', () => {
   it('returns empty object for empty input object', () => {
     expect(sanitizeFields({})).toEqual({});
   });
+
+  // --- Event Date edge cases (root cause of the 422 batch import bug) ---
+  it('skips Event Date when value is empty string', () => {
+    const result = sanitizeFields({ 'Event Date': '' });
+    expect(result).not.toHaveProperty('Event Date');
+  });
+
+  it('skips Event Date when value is null', () => {
+    const result = sanitizeFields({ 'Event Date': null });
+    expect(result).not.toHaveProperty('Event Date');
+  });
+
+  it('skips Event Date when value is undefined', () => {
+    const result = sanitizeFields({ 'Event Date': undefined });
+    expect(result).not.toHaveProperty('Event Date');
+  });
+
+  it('keeps Event Date when value is a valid ISO date string', () => {
+    const result = sanitizeFields({ 'Event Date': '2026-05-15' });
+    expect(result['Event Date']).toBe('2026-05-15');
+  });
 });

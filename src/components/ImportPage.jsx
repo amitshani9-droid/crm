@@ -156,7 +156,7 @@ const ImportPage = () => {
           Phone: cleanPhone,
           Email: columnMapping.Email ? String(row[columnMapping.Email] || '') : '',
           'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') : '',
-          'Event Date': cleanDate || '', 
+          'Event Date': cleanDate || null, 
           Notes: columnMapping.Notes ? String(row[columnMapping.Notes] || '') : '',
           Budget: columnMapping.Budget && row[columnMapping.Budget] ? Number(row[columnMapping.Budget].toString().replace(/\D/g, '')) : null,
           Participants: columnMapping.Participants && row[columnMapping.Participants] ? Number(row[columnMapping.Participants].toString().replace(/\D/g, '')) : null,

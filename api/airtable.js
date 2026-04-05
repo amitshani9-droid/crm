@@ -25,6 +25,8 @@ export function sanitizeFields(fields) {
     } else if (key === 'Budget' || key === 'Participants') {
       const n = Number(val);
       if (!isNaN(n)) out[key] = n;
+    } else if (key === 'Event Date') {
+      if (val !== null && val !== undefined && val !== '') out[key] = String(val);
     } else {
       out[key] = String(val ?? '').slice(0, 2000);
     }
