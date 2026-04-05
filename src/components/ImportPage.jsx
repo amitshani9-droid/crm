@@ -155,7 +155,7 @@ const ImportPage = () => {
           Company: columnMapping.Company ? String(row[columnMapping.Company] || '') : '',
           Phone: cleanPhone,
           Email: columnMapping.Email ? String(row[columnMapping.Email] || '') : '',
-          'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') : '',
+          'Event Type': columnMapping.EventType ? String(row[columnMapping.EventType] || '') || null : null,
           'Event Date': cleanDate || null, 
           Notes: columnMapping.Notes ? String(row[columnMapping.Notes] || '') : '',
           Budget: columnMapping.Budget && row[columnMapping.Budget] ? Number(row[columnMapping.Budget].toString().replace(/\D/g, '')) : null,
@@ -250,6 +250,17 @@ const ImportPage = () => {
                     accept=".csv"
                     className="hidden" 
                   />
+                </div>
+
+                <div className="mt-6 text-center">
+                  <a
+                    href="/crm-template.csv"
+                    download="crm-template.csv"
+                    className="inline-flex items-center gap-2 text-sm text-[#C5A880] hover:text-[#a8895f] font-semibold underline underline-offset-4 transition-colors"
+                  >
+                    ⬇️ הורד תבנית CSV מוכנה למילוי
+                  </a>
+                  <p className="text-xs text-[#9BACA4] mt-1">פתח ב-Google Sheets ← מלא לקוחות ← ייצא כ-CSV ← העלה כאן</p>
                 </div>
               </motion.div>
             )}
