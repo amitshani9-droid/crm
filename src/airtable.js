@@ -151,6 +151,9 @@ export async function importRecordsBatch(records) {
       body: JSON.stringify(cleanedRecords)
     });
     const data = await response.json();
+    if (!response.ok) {
+      console.error('Server error response:', JSON.stringify(data, null, 2));
+    }
     return { success: response.ok, count: Array.isArray(data) ? data.length : 0 };
   } catch (err) {
     console.error("Bulk import error:", err);

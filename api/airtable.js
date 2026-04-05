@@ -16,6 +16,7 @@ export function sanitizeFields(fields) {
   for (const key of ALLOWED_FIELDS) {
     if (!(key in fields)) continue;
     const val = fields[key];
+    if (val === null || val === undefined) continue; // never send null to Airtable
     if (key === 'Status') {
       if (ALLOWED_STATUSES.includes(val)) out[key] = val;
     } else if (key === 'Quote Sent') {
@@ -92,7 +93,12 @@ export default async function handler(req, res) {
         return res.status(405).end(`Method ${method} Not Allowed`);
     }
   } catch (error) {
-    console.error('Airtable API Proxy Error:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message || error.toString() });
+    const details = {
+      message: error.message || error.toString(),
+      statusCode: error.statusCode,
+      error: error.error,
+    };
+    console.error('Airtable API Proxy Error:', JSON.stringify(details, null, 2));
+    return res.status(500).json({ error: 'Internal server error', details });
   }
 }
