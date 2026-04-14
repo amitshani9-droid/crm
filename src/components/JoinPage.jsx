@@ -283,7 +283,7 @@ const JoinPage = () => {
             {/* Footer Links */}
             <motion.div variants={itemVariants} className="mt-6 flex flex-col md:flex-row items-center justify-center gap-6 text-[#A0AEC0] text-sm font-medium">
               <a 
-                href="https://wondrous-druid-2df08e.netlify.app/#" 
+                href="https://tal-shani.co.il/" 
                 className="flex items-center gap-2 hover:text-[#7D8F69] transition-colors opacity-80 hover:opacity-100"
               >
                 <ArrowRight size={16} />
@@ -325,7 +325,7 @@ const JoinPage = () => {
             </p>
             
             <a 
-              href="https://wondrous-druid-2df08e.netlify.app/#" 
+              href="https://tal-shani.co.il/" 
               className="mt-8 inline-block text-[#7D8F69] font-semibold hover:underline"
             >
               חזרה לאתר הראשי
